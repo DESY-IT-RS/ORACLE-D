@@ -7,6 +7,7 @@
 #    files in the main directory 
 # ===========================================================================
 
+from collections import deque
 import sys
 
 from cluster.WorkerNode import *
@@ -32,7 +33,7 @@ class Cluster():
         
         self._simulation_time = simulation_time
         self._worker_nodes = []
-        self._queued_jobs = []
+        self._queued_jobs = deque()
         self._timestep_power_dissipated = 0
         self._timestep_carbon_consumed = 0 
         self._timestep_occupancy = 0
@@ -132,21 +133,16 @@ class Cluster():
             worker_node.update()
             
         ### Queues ###
-        remaining_jobs = []
-
-        # Try to start queued jobs
-        for pending_job in self._queued_jobs:
-            # Try to fill nodes in order
-            for worker_node in self._worker_nodes:
-                if pending_job is not None and worker_node.can_schedule_job(pending_job):
-                    worker_node.start_job(pending_job)
-                    pending_job = None
-                
-            # If we failed to allocate job to node
-            if pending_job is not None:
-                remaining_jobs.append(pending_job)
-        
-        self._queued_jobs = remaining_jobs
+        # Try to start the next queued job
+        next_job = self._queued_jobs.popleft()
+        # Try to fill nodes in order
+        for worker_node in self._worker_nodes:
+            if next_job is not None and worker_node.can_schedule_job(next_job):
+                worker_node.start_job(next_job)
+                next_job = self._queued_jobs.popleft()
+        # If we failed to allocate the next queued job to a node
+        if next_job is not None:
+            self._queued_jobs.appendleft(next_job)
 
         # ---------------------------------
         #    Termination Check
