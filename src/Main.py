@@ -24,6 +24,7 @@
 from simulation.Simulation import Simulation
 from cluster.ClusterLoader import load_cluster_inventory
 from util import Logging
+import argparse
 import json
 import os
 import logging
@@ -31,9 +32,17 @@ import logging
 
 logger = Logging.get_logger()
 
-if __name__ == '__main__':
+
+def _default_config_path():
     project_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    with open(project_dir + '/config.json') as f:
+    return os.path.join(project_dir, 'config.json')
+
+
+def main(config_path=None):
+    if config_path is None:
+        config_path = _default_config_path()
+
+    with open(config_path) as f:
         config = json.load(f)
 
 
@@ -69,3 +78,18 @@ if __name__ == '__main__':
     sim.start()
     #sim2 = Simulation('eveningclock') # Clock down the node at 5pm and up at 9pm
     #sim2.start()
+
+
+def _parse_args():
+    parser = argparse.ArgumentParser(description='Run an ORACLE-D simulation.')
+    parser.add_argument(
+        '--config',
+        default=None,
+        help='Path to the simulation config JSON file. Defaults to the repository config.json.',
+    )
+    return parser.parse_args()
+
+
+if __name__ == '__main__':
+    args = _parse_args()
+    main(args.config)

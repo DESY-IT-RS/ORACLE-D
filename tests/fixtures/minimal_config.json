@@ -1,0 +1,32 @@
+{
+  "Simulation": {
+    "desired_starttime": "2024-01-16 16:00",
+    "simulation_length": 21600,
+    "timestep": 18000,
+    "savings_policy": "none"
+  },
+  "carbon_intensity": {
+    "folder": "data/carbon_intensity/",
+    "filename": "minimal_carbon_intensity.csv",
+    "high_CI_threshold": 400
+  },
+  "cluster": {
+    "cluster_name": "TEST",
+    "inventory_csv": "data/cluster/minimal_inventory.csv",
+    "frequency_csv": "data/cluster/minimal_frequency_dependence.csv",
+    "strict": true
+  },
+  "jobs": {
+    "initial_mix": {
+      "GridPP": 1
+    },
+    "regular_incoming_mix": {},
+    "incoming_timestep": 3600
+  },
+  "output": {
+    "verbosity": "low",
+    "debug": false,
+    "log_dir": "logs/runs",
+    "run_label": "integration-test"
+  }
+}
