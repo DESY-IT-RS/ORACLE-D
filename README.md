@@ -47,9 +47,9 @@ The Simulation has two encoded end conditions
 -  Average occupancy of the cluster
 
 ### Package Dependencies
-ORACLE-D has external package requirements in requirements.txt
+ORACLE-D package metadata, supported Python version, runtime dependencies, and optional dependency groups are defined in `pyproject.toml`. The `requirements.txt` file references that project metadata for pip-based environment setup.
 
-For those that use pip and venv to manage environment, you can run these commands that creates a virtual environment called 'venv' to hold the environment needed for the project. 
+For those that use pip and venv to manage environment, you can run these commands that create a virtual environment called 'venv' to hold the environment needed for the project. 
 ```
 python3 -m venv .venv
 source .venv/bin/activate
@@ -57,16 +57,58 @@ python3 -m pip install --upgrade pip
 python3 -m pip install -r requirements.txt
 ```
 
+### Running tests
+The automated tests live under `tests/` and are run with `pytest`. They use the
+small deterministic input files in `tests/fixtures/` rather than the full
+default data set, so they are intended to be quick integration checks.
+
+To install the test dependencies and run the full suite:
+```
+python3 -m pip install -e ".[test]"
+python3 -m pytest
+```
+
+The integration tests currently check that:
+- cluster inventory and frequency CSV files can be loaded into worker nodes;
+- malformed or incomplete CSV data raises an error with `strict` enabled and is logged and skipped otherwise;
+- `src/Main.py --config ...` accepts an explicit configuration file;
+- a minimal GridPP simulation completes and writes its run directory outputs;
+- the generated `summary.json` contains the expected metrics and preserved simulation parameters;
+- each savings policy (`cd`, `cdcd`, `cd1721`, `cdcd1721`, `highforecast`) produces the exactly expected total and peak-time energy and carbon values;
+- jobs from `regular_incoming_mix` are submitted at the configured interval and started when capacity allows;
+- optionally, the standard `config.json` run agrees with the reference output in `tests/fixtures/default/logs/runs/test/summary.json`, ignoring only wall-clock runtime fields.
+
+A short description of every individual test is kept in `tests/README.md`.
+
+For a faster targeted run while working on the simulation path, use:
+```
+python3 -m pytest tests/integration
+```
+The tests create temporary run directories through pytest fixtures, so they should not write new output into the repository's normal `logs/runs/` directory. The default-config reference test is optional because it is slower. It uses fixture copies of the default config, default cluster CSVs, carbon-intensity CSV, and reference output under `tests/fixtures/default/`, then writes its new run output to a pytest temporary directory. To include it, set:
+```
+ORACLE_D_RUN_DEFAULT_REFERENCE_TEST=1 python3 -m pytest tests/integration/test_default_config_reference.py
+```
+
+That test runs the same command as the first-run smoke test below,
+`python3 src/Main.py`, with the fixture copy of `config.json`, and compares the
+generated `summary.json` to
+`tests/fixtures/default/logs/runs/test/summary.json`.
+
 ## Getting started with the first run
 To run this simulation in this folder type the command:
 ```
 python3 src/Main.py
 ```
+By default, this reads `config.json` from the repository root. To run with a
+different configuration file, pass it explicitly:
+```
+python3 src/Main.py --config path/to/config.json
+```
+The default running mode is to run 50,000 'GridPP' jobs on the default DESY Grid compute cluster without any special running conditions at medium verbosity. This could run for a couple of minutes and produce a log output, and the folder logs/runs/[DATE]_RF20PMTest-50000GridPP-Base with the summary of the output. The information of grid carbon intensity is taken from data/de_carbon_Intensity_2024_15min.csv. This can be compared to the folder that exists already in the folder which takes the same job mix started at the same time. This is equivalent to the default reference test described in the previous section.
 
-The default running mode is to run 50,000 'GridPP' jobs on the default DESY Grid compute cluster from 2024-01-16 16:00 without any special running conditions at medium verbosity. This could run for a couple of minutes and produce a log output, and the folder logs/runs/[DATE]_RF20PMTest-50000GridPP-Base with the summary of the output. The information of grid carbon intensity is taken from data/de_carbon_Intensity_2024_15min.csv. This can be compared to the folder that exists already in the folder which takes the same job mix started at the same time. If the two summaries match, this test was run successfully.
 
 ## Configuration
-The simulation is configured via the config.json file. In there, all relevant parameters are specified. They are split into several sections dealing with the different parts of the code.
+The simulation is configured via a JSON config file. The default is `config.json` in the repository root, and another file can be selected with `--config`. In there, all relevant parameters are specified. They are split into several sections dealing with the different parts of the code.
 
 ### Simulation
 The parameters that can be changed for the simulation include:
@@ -128,7 +170,7 @@ The parameters for the cluster include:
 | strict   | Whether the program should terminate when an incomplete frequency dependence data entry is found or simply log and continue. | 
 
 ## Adding Extra Options
-If you want amend the measurements for each node or add different types of node not yet in the simulation. This needs to be done at the bottom of src/cluster/WorkerNode.py.
+If you want to amend the measurements for each node or add different types of node not yet in the simulation. This needs to be done at the bottom of src/cluster/WorkerNode.py.
 
 To add new machines you will need the following information:
 - name
@@ -188,4 +230,4 @@ The measurements used here to catagorise the different types of server come from
 
 The carbon intensity data for the UK is taken from the [UK National Grid ESO](https://www.nationalgrideso.com/data-portal/national-carbon-intensity-forecast/national_carbon_intensity_forecast) interpolated to fill in gaps in the data and can be downloaded from [here](https://www.nationalgrideso.com/data-portal/national-carbon-intensity-forecast/national_carbon_intensity_forecast) and for Germany is taken from [Agorameter](https://www.agora-energiewende.de/daten-tools/agorameter) and [Green Grid Compass](https://www.greengrid-compass.eu/).
 
-This code was partially written for the RF2.0 project that has received funding from the European Union’s Horizon Europe research and innovation programme under grant agreement No. 101131850 and from the Swiss State Secretariat for Education Research and Innovation (SERI)
+This code was partially written for the RF2.0 project that has received funding from the European Union’s Horizon Europe research and innovation programme under grant agreement No. 101131850 and from the Swiss State Secretariat for Education Research and Innovation (SERI). Parts of the testing suite were written with the help of codex.

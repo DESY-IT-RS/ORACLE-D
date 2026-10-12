@@ -21,8 +21,7 @@
 
     "jobs" : {
         "initial_mix" : {
-            "ATLAS" : 40000,
-            "LHCb" : 10000
+            "GridPP" : 50000
         },
         "regular_incoming_mix" : {},
         "incoming_timestep" : 3600
@@ -32,6 +31,6 @@
         "verbosity" : "medium",
         "debug" : false,
         "log_dir" : "logs/runs",
-        "run_label" : "RF20PMTest-50000LHCJobs-Base"
+        "run_label" : "RF20PMTest-50000GridPP-Base"
     }
 }

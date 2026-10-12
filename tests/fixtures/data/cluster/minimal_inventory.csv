@@ -1,0 +1,2 @@
+representative,timestamp_check,number_machines,number_decommissioned,type,subtype,comment,manufacturer,model,cpu_model,hepscore,installation_date,cluster(main_Puppet_hostgroup),total_cores,total_threads,total_mem_in_Gb,power_min_60d,power_max_60d
+test-node,2024-01-01T00:00:00,1,0,TESTNODE,0,minimal integration fixture,,Test Model,Test CPU,1939.60,2024,TEST,1,2,8,50,200
