@@ -11,6 +11,7 @@ from collections import deque
 import sys
 
 from cluster.WorkerNode import *
+from jobs.Jobs import Job
 from util import Logging
 from datalogger.DataLogger import DataLogger
 from datetime import datetime
@@ -33,7 +34,7 @@ class Cluster():
         
         self._simulation_time = simulation_time
         self._worker_nodes = []
-        self._queued_jobs = deque()
+        self._queued_jobs = deque[Job]()
         self._timestep_power_dissipated = 0
         self._timestep_carbon_consumed = 0 
         self._timestep_occupancy = 0
@@ -134,12 +135,12 @@ class Cluster():
             
         ### Queues ###
         # Try to start the next queued job
-        next_job = self._queued_jobs.popleft()
+        next_job = self._queued_jobs.popleft() if self._queued_jobs else None
         # Try to fill nodes in order
         for worker_node in self._worker_nodes:
             if next_job is not None and worker_node.can_schedule_job(next_job):
                 worker_node.start_job(next_job)
-                next_job = self._queued_jobs.popleft()
+                next_job = self._queued_jobs.popleft()  if self._queued_jobs else None
         # If we failed to allocate the next queued job to a node
         if next_job is not None:
             self._queued_jobs.appendleft(next_job)
