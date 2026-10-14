@@ -138,9 +138,9 @@ class Cluster():
         next_job = self._queued_jobs.popleft() if self._queued_jobs else None
         # Try to fill nodes in order
         for worker_node in self._worker_nodes:
-            if next_job is not None and worker_node.can_schedule_job(next_job):
+            while next_job is not None and worker_node.can_schedule_job(next_job):
                 worker_node.start_job(next_job)
-                next_job = self._queued_jobs.popleft()  if self._queued_jobs else None
+                next_job = self._queued_jobs.popleft() if self._queued_jobs else None
         # If we failed to allocate the next queued job to a node
         if next_job is not None:
             self._queued_jobs.appendleft(next_job)
