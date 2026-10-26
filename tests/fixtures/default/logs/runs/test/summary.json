@@ -38,8 +38,8 @@
     "duration": {
         "simulated_seconds": 109800.0,
         "simulated_hours": 30.5,
-        "real_seconds": 46.446332,
-        "real_minutes": 0.7741055333333333
+        "real_seconds": 76.561718,
+        "real_minutes": 1.2760286333333333
     },
     "jobs": {
         "started": 50000,
@@ -48,9 +48,9 @@
         "total_cores_used": 50000
     },
     "cpu": {
-        "total_core_seconds": 844884064,
-        "total_core_hours": 234690.01777777777,
-        "average_core_hours": 4.693800355555555
+        "total_core_seconds": 1135211113.9801219,
+        "total_core_hours": 315336.42055003386,
+        "average_core_hours": 6.306728411000677
     },
     "occupancy": {
         "average_fraction": 0.46007012235096456,
