@@ -181,7 +181,8 @@ class WorkerNode():
   
     def can_schedule_job(self, job):
         if job.cores_req > self.get_free_core_count(): return False
-        if job.memory_req > self.get_memory_available(): return False
+        # memory_req is per core; compare the job's total footprint, matching start_job's allocation.
+        if job.memory_req*job.cores_req > self.get_memory_available(): return False
         return True
      
     def start_job(self, job):
