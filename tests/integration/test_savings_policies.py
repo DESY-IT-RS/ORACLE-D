@@ -49,6 +49,49 @@ def test_savings_policy_energy_and_carbon(
     assert summary["carbon"]["peaktime_g"] == pytest.approx(peaktime_g)
 
 
+def test_cd1721_triggers_when_no_update_lands_exactly_on_the_hour(
+    run_simulation, base_config, fixture_paths
+):
+    # Updates land at 16:30, 17:30, ... so the old minute-window match
+    # (17:00-17:09) never fired. The boundary-crossing check must clock down
+    # at the 17:30 update: 0.2 kWh for the first step, 0.1 kWh for the four
+    # clocked-down steps.
+    config = _policy_config(base_config, fixture_paths, "cd1721")
+    config["Simulation"]["desired_starttime"] = "2024-01-16 16:30"
+    config["Simulation"]["simulation_length"] = 14400
+    config["Simulation"]["timestep"] = 3600
+
+    run = run_simulation(config, "cd1721_offset")
+
+    assert run.result.returncode == 0, run.result.stdout + run.result.stderr
+    assert run.result.stdout.count("It's 5pm time to clock down the nodes!") == 1
+
+    summary = json.loads((run.run_dir / "summary.json").read_text())
+
+    assert summary["energy"]["total_kwh"] == pytest.approx(0.6)
+    assert summary["carbon"]["total_g"] == pytest.approx(60.0)
+
+
+def test_cd1721_clocks_down_only_once_with_small_timesteps(
+    run_simulation, base_config, fixture_paths
+):
+    # With 300 s steps two updates land inside the old 17:00-17:09 window,
+    # which used to clock down twice (two frequency steps). Crossing 17:00
+    # must fire exactly once: 12 steps at 200 W, then 13 steps at 100 W.
+    config = _policy_config(base_config, fixture_paths, "cd1721")
+    config["Simulation"]["simulation_length"] = 7200
+    config["Simulation"]["timestep"] = 300
+
+    run = run_simulation(config, "cd1721_small_steps")
+
+    assert run.result.returncode == 0, run.result.stdout + run.result.stderr
+    assert run.result.stdout.count("It's 5pm time to clock down the nodes!") == 1
+
+    summary = json.loads((run.run_dir / "summary.json").read_text())
+
+    assert summary["energy"]["total_kwh"] == pytest.approx((12 * 200 + 13 * 100) * 300 / 3600 / 1000)
+
+
 def test_highforecast_policy_clocks_down_while_forecast_is_high(
     run_simulation, base_config, fixture_paths
 ):
