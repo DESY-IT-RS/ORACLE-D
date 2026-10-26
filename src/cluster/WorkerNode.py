@@ -181,7 +181,8 @@ class WorkerNode():
   
     def can_schedule_job(self, job):
         if job.cores_req > self.get_free_core_count(): return False
-        if job.memory_req > self.get_memory_available(): return False
+        # memory_req is per core; compare the job's total footprint, matching start_job's allocation.
+        if job.memory_req*job.cores_req > self.get_memory_available(): return False
         return True
      
     def start_job(self, job):
@@ -269,7 +270,7 @@ class WorkerNode():
             # Has the job finished?
             if job.end_time <= self._simulation_time.get_current_datetime():
                 if job not in finished_jobs:
-                    job.duration = (job.end_time - job.start_time).seconds # need to update the duration of the job if it has been edited due to clockdowns
+                    job.duration = (job.end_time - job.start_time).total_seconds() # need to update the duration of the job if it has been edited due to clockdowns
                     self._job_finished_handler(job, self)
                     finished_jobs.append(job)
                     self._busy_RAM   -= job.memory_req*job.cores_req # Need to free up the memory now it is no longer being used.

@@ -3,13 +3,13 @@ Summary
 ========
 
 Total Simulated-time Duration      : 30.5 hours
-Total Real-time Duration           :  0.8 minutes
+Total Real-time Duration           :  1.3 minutes
 
 Jobs Started                       : 50000
 Jobs Finished                      : 50000
 
-Total CPU duration                 : 234690.0 hours
-Average CPU duration               : 4.69 hours
+Total CPU duration                 : 315336.4 hours
+Average CPU duration               : 6.31 hours
 Average Occupancy of all clusters  : 46.0 %
 
 Total energy consumed by compute   : 2330.30 kWh

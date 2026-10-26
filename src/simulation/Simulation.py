@@ -52,6 +52,7 @@ class Simulation():
         
         linesofimport = []
         datarequired  = False
+        window_end_reached = False
         with open(datapath+datafile) as file:
             for line in file.read().splitlines():
                 line = line.split(',')
@@ -60,18 +61,24 @@ class Simulation():
                     datarequired = True
                 elif line[0] == self.datafinal_str: # Exit file after you have reached the end time value.
                     datarequired = False
-                
+                    window_end_reached = True
+
                 if datarequired == True: #Import data when you have found that date you want.
                     if line[1] == '': # If there is data missing
                         print("You are missing forecast CI data for the time segment: " + line[0])
-                        sys.exit
+                        sys.exit(1)
                     if line[2] == '': # If there is data missing
                         print("You are missing actual CI data for the time segment: " + line[0])
-                        sys.exit
+                        sys.exit(1)
                     linesofimport.append(line)    
                     
         self._CIntendata = linesofimport
-        
+
+        if not self._CIntendata or not window_end_reached:
+            print(f"The carbon intensity file {datafile} does not cover the simulation window "
+                  f"from {self.datastart_str} to {self.datafinal_str}.")
+            sys.exit(1)
+
         self.CIThresholdValue = config["carbon_intensity"]["high_CI_threshold"] #  200gCO2e/kWh - This roughly corresponds to what is labelled 'high' in the UK. For Germany I'll put this at 400
 
         # Create the cluster {WorkerNode[unstantiated WN of type WorkerNode]:amount[integer]}
