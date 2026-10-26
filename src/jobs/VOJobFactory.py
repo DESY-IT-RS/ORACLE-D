@@ -34,10 +34,12 @@ class VOJobFactory():
 
     def __require_cores(self):
         # Determine whether you are running a Single or multi-core job.
-        if self._cores_requested == None: 
-            core_num_seed = random.gauss(0,1)    
-            if core_num_seed < 0: self._cores_requested = 8 #Random 50% chance of requring 8 or 1 core.
-            else                : self._cores_requested = 1
+        # Draw per job: caching the draw in self._cores_requested would make every
+        # later job from this factory reuse the first job's core count.
+        if self._cores_requested == None:
+            core_num_seed = random.gauss(0,1)
+            if core_num_seed < 0: return 8 #Random 50% chance of requring 8 or 1 core.
+            else                : return 1
         return self._cores_requested
 
     def create_job(self):
@@ -59,9 +61,9 @@ class GridPPJobFactory(VOJobFactory):
         return durationmins * 60
 
     def __require_cores(self):
-        #100% chance of requring 1 core is nothing is specified. 
-        if self._cores_requested == None: 
-            self._cores_requested = 1 
+        #100% chance of requring 1 core is nothing is specified.
+        if self._cores_requested == None:
+            return 1
         return self._cores_requested
 
     def create_job(self):
@@ -92,10 +94,10 @@ class ATLASJobFactory(VOJobFactory):
 
     def __require_cores(self):
         # Determine whether you are running a Single or multi-core job.
-        if self._cores_requested == None: 
-            core_num_seed = random.randint(0,101)    
-            if core_num_seed < 80: self._cores_requested = 8 #80% chance of requring 8 cores.
-            else                 : self._cores_requested = 1 #20% chance of requring 1 core. 
+        if self._cores_requested == None:
+            core_num_seed = random.randint(0,101)
+            if core_num_seed < 80: return 8 #80% chance of requring 8 cores.
+            else                 : return 1 #20% chance of requring 1 core.
         return self._cores_requested
 
     def create_job(self):
@@ -127,10 +129,10 @@ class LHCbJobFactory(VOJobFactory):
 
     def __require_cores(self):
         # Determine whether you are running a Single or multi-core job.
-        if self._cores_requested == None: 
-            core_num_seed = random.randint(0,101)    
-            if core_num_seed < 10: self._cores_requested = 8 #10% chance of requring 8 cores.
-            else                 : self._cores_requested = 1 #90% chance of requring 1 core. 
+        if self._cores_requested == None:
+            core_num_seed = random.randint(0,101)
+            if core_num_seed < 10: return 8 #10% chance of requring 8 cores.
+            else                 : return 1 #90% chance of requring 1 core.
         return self._cores_requested
     
     def create_job(self):
