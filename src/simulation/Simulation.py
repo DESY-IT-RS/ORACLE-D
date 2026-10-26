@@ -64,10 +64,10 @@ class Simulation():
                 if datarequired == True: #Import data when you have found that date you want.
                     if line[1] == '': # If there is data missing
                         print("You are missing forecast CI data for the time segment: " + line[0])
-                        sys.exit
+                        sys.exit(1)
                     if line[2] == '': # If there is data missing
                         print("You are missing actual CI data for the time segment: " + line[0])
-                        sys.exit
+                        sys.exit(1)
                     linesofimport.append(line)    
                     
         self._CIntendata = linesofimport
