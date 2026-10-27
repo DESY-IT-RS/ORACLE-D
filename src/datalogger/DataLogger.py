@@ -17,7 +17,6 @@ logger = Logging.get_logger()
 class DataLogger():
 
     # This should also write to disk...
-
     def __init__(self, config): 
         self._jobs_submitted = 0
         self._jobs_started = 0

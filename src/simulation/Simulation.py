@@ -127,7 +127,7 @@ class Simulation():
 
         print ('Jobs: ', end='')
         for vo, jobs in self._jobScheduler._inital_job_mix.items():
-            print(vo + ': ' + str(jobs), end='')
+            print(vo + ': ' + str(jobs), end=' ')
         if self._jobScheduler._regular_incoming_jobs:
             print(' then ', end='')
             for l1 in self._jobScheduler._regular_incoming_jobs:

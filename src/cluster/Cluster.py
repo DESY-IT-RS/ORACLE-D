@@ -184,7 +184,7 @@ class Cluster():
                     worker_node.clock_minimum()  
 
             if self._simulation_time.get_current_datetime().strftime('%H:%M') in ('15:30','15:31','15:32','15:33','15:34','15:35','15:36','15:37','15:38','15:39'):
-                print("It's 15:30am time to clock back up the nodes!")
+                print("It's 15:30pm time to clock back up the nodes!")
                 for worker_node in self._worker_nodes:
                     worker_node.clock_maximum()        
         
