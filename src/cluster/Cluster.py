@@ -162,6 +162,7 @@ class Cluster():
         # Compares the simulation time wrt the time in the hh segment and moves a pointer to the correct hh segment carbon usage.
         if self._simulation_time.get_current_datetime() > datetime.strptime(self._carbondata[self._cditerant+1][0], '%Y-%m-%dT%H:%M:%S'):
             self._cditerant += 1
+            
         # Code to clock down nodes between 5pm and 9pm everyday  
         if 'cd1721' in self._energy_saving_try:             
             if self._simulation_time.get_current_datetime().strftime('%H:%M') in ('17:00','17:01','17:02','17:03','17:04','17:05','17:06','17:07','17:08', '17:09'):
