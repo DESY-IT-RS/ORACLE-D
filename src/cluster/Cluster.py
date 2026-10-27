@@ -177,7 +177,7 @@ class Cluster():
                     if self._energy_saving_try == 'cdcd1721': worker_node.clock_up() 
 
         # Grid summer saving program is to clock running nodes down to their lowest values from 11:30 to 15:30
-        if 'gridsummersave' in self._energy_saving_try:
+        if 'middaymaxcd' in self._energy_saving_try:
             if self._simulation_time.get_current_datetime().strftime('%H:%M') in ('11:30','11:31','11:32','11:33','11:34','11:35','11:36','11:37','11:38','11:39'):
                 print("It's 11:30am time to clock down the nodes all the way down!")
                 for worker_node in self._worker_nodes:
@@ -223,7 +223,7 @@ class Cluster():
         self._energy_and_carbon_consumed_handler(self._timestep_power_dissipated, self._timestep_carbon_consumed) # Passing energy consumed and the carbon intensity per timestep
         self._occupancy_handler(self._timestep_occupancy)  # Passing occupancy per timestep
 
-        if 'gridsummersave' in self._energy_saving_try:
+        if 'middaymaxcd' in self._energy_saving_try:
             if datetime.strptime('11:30:00', '%H:%M:%S').time() < self._simulation_time.get_current_datetime().time() < datetime.strptime('15:30:00', '%H:%M:%S').time():
                 self._peaktime_energy_and_carbon_consumed_handler(self._timestep_power_dissipated, self._timestep_carbon_consumed) 
 

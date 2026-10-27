@@ -25,14 +25,16 @@ The simulation framework is designed to simulate the amount of energy and carbon
 
 [3] The different saving policies that the simulation can be run with are specified via a setting in config.json. This policy changes the frequency the nodes are run at and at what times of day this is done. Current running options are
 
-| Running Flag  | Description |
-| :------------: | :------ |
-| None          |  Run the nodes as standard  |
-| cd            |  Runs all the nodes clocked down one frequency step from the reported maximum frequency for the entire duration of the simulation    | 
-| cdcd          |  Runs all the nodes clocked down two frequency steps from the reported maximum frequency for the entire duration of the simulation      |
-| cd1721        |  Runs all the nodes clocked down one frequency step from the reported maximum frequency only between the hours of 5pm and 9pm  |
-| cdcd1721      |  Runs all the nodes clocked down two frequency steps from the reported maximum frequency only between the hours of 5pm and 9pm   |
-| highforecast  |  Runs all the nodes clocked down one frequency step from the reported maximum frequency only when the forecasted usage is high (> 400gCO2e/kWh)   |
+| Running Flag    | Description |
+| :------------:  | :------ |
+| None            |  Run the nodes as standard  |
+| cd              |  Runs all the nodes clocked down one frequency step from the reported maximum frequency for the entire duration of the simulation    | 
+| cdcd            |  Runs all the nodes clocked down two frequency steps from the reported maximum frequency for the entire duration of the simulation      |
+| cd1721          |  Runs all the nodes clocked down one frequency step from the reported maximum frequency only between the hours of 5pm and 9pm  |
+| cdcd1721        |  Runs all the nodes clocked down two frequency steps from the reported maximum frequency only between the hours of 5pm and 9pm   |
+| middaymaxcd     |  Runs all the nodes clocked down to the minimum running frequency reported by the machine only between the hours of 11:30am and 15:30pm |
+| highforecast    |  Runs all the nodes clocked down one frequency step from the reported maximum frequency only when the forecasted usage is high (> 400gCO2e/kWh)   |
+
 
 The Simulation has two encoded end conditions
   1) All the jobs sent to the cluster have been completed
