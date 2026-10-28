@@ -162,6 +162,7 @@ class Cluster():
         # Compares the simulation time wrt the time in the hh segment and moves a pointer to the correct hh segment carbon usage.
         if self._simulation_time.get_current_datetime() > datetime.strptime(self._carbondata[self._cditerant+1][0], '%Y-%m-%dT%H:%M:%S'):
             self._cditerant += 1
+            
         # Code to clock down nodes between 5pm and 9pm everyday  
         if 'cd1721' in self._energy_saving_try:             
             if self._simulation_time.get_current_datetime().strftime('%H:%M') in ('17:00','17:01','17:02','17:03','17:04','17:05','17:06','17:07','17:08', '17:09'):
@@ -175,6 +176,18 @@ class Cluster():
                 for worker_node in self._worker_nodes:
                     worker_node.clock_up()
                     if self._energy_saving_try == 'cdcd1721': worker_node.clock_up() 
+
+        # Grid summer saving program is to clock running nodes down to their lowest values from 11:30 to 15:30
+        if 'middaymaxcd' in self._energy_saving_try:
+            if self._simulation_time.get_current_datetime().strftime('%H:%M') in ('11:30','11:31','11:32','11:33','11:34','11:35','11:36','11:37','11:38','11:39'):
+                print("It's 11:30am time to clock down the nodes all the way down!")
+                for worker_node in self._worker_nodes:
+                    worker_node.clock_minimum()  
+
+            if self._simulation_time.get_current_datetime().strftime('%H:%M') in ('15:30','15:31','15:32','15:33','15:34','15:35','15:36','15:37','15:38','15:39'):
+                print("It's 15:30pm time to clock back up the nodes!")
+                for worker_node in self._worker_nodes:
+                    worker_node.clock_maximum()        
         
         # Clocking down nodes when the next hh timesegment is forecast to have "high" or "very high" usage.
         # A better and more reliable way is to dampen the transition by instead using the numerical equivalent of high which is 200 (g(C02)/kWh).
@@ -211,9 +224,13 @@ class Cluster():
         self._energy_and_carbon_consumed_handler(self._timestep_power_dissipated, self._timestep_carbon_consumed) # Passing energy consumed and the carbon intensity per timestep
         self._occupancy_handler(self._timestep_occupancy)  # Passing occupancy per timestep
 
-        if datetime.strptime('17:00:00', '%H:%M:%S').time() < self._simulation_time.get_current_datetime().time() < datetime.strptime('21:00:00', '%H:%M:%S').time():
+        if 'middaymaxcd' in self._energy_saving_try:
+            if datetime.strptime('11:30:00', '%H:%M:%S').time() < self._simulation_time.get_current_datetime().time() < datetime.strptime('15:30:00', '%H:%M:%S').time():
+                self._peaktime_energy_and_carbon_consumed_handler(self._timestep_power_dissipated, self._timestep_carbon_consumed) 
+
+        elif datetime.strptime('17:00:00', '%H:%M:%S').time() < self._simulation_time.get_current_datetime().time() < datetime.strptime('21:00:00', '%H:%M:%S').time():
             self._peaktime_energy_and_carbon_consumed_handler(self._timestep_power_dissipated, self._timestep_carbon_consumed) 
-        
+
         #print(self._timestep_power_dissipated) #For debugging
         self._timestep_power_dissipated = 0 # Reset the accumulator every time-step
       
