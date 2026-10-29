@@ -69,7 +69,7 @@ def test_highforecast_policy_clocks_down_while_forecast_is_high(
     assert summary["carbon"]["peaktime_g"] == pytest.approx(25.0)
 
 
-def test_summer_savings_policy_clocks_down_nodes(
+def test_summer_savings_policy_clocks_nodes_down_and_up(
     run_simulation, base_config, fixture_paths
 ):
     config = _policy_config(base_config, fixture_paths, "middaymaxcd")
