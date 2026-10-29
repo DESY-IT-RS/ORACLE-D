@@ -7,7 +7,6 @@ from types import SimpleNamespace
 
 import pytest
 
-
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 FIXTURES_DIR = PROJECT_ROOT / "tests" / "fixtures"
 

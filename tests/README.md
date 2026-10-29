@@ -58,6 +58,9 @@ computable.
   `highforecast_carbon_intensity.csv`, whose forecast rises above and later falls below the
   400±5 hysteresis band; asserts the exact totals produced by the one-timestep anticipation
   delay on either side of the high-forecast window (clock-down at 17:30, clock-up at 19:00).
+- **test_summer_savings_policy_clocks_nodes_down_and_up** — uses a 5-hour simulation window 
+  starting at 11:00; asserts that the `middaymaxcd` policy correctly triggers clock-down and 
+  clock-up actions at 11:30 and 15:30, respectively, by verifying the corresponding log messages.
 
 ## test_job_refill.py
 
