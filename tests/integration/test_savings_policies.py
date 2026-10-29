@@ -67,3 +67,15 @@ def test_highforecast_policy_clocks_down_while_forecast_is_high(
     assert summary["energy"]["peaktime_kwh"] == pytest.approx(0.25)
     assert summary["carbon"]["total_g"] == pytest.approx(55.0)
     assert summary["carbon"]["peaktime_g"] == pytest.approx(25.0)
+
+
+def test_summer_savings_policy_clocks_down_nodes(
+    run_simulation, base_config, fixture_paths
+):
+    config = _policy_config(base_config, fixture_paths, "middaymaxcd")
+    config["Simulation"]["desired_starttime"] = "2024-01-16 11:00"
+    config["Simulation"]["simulation_length"] = 18000
+    run = run_simulation(config, "middaymaxcd")
+    assert run.result.returncode == 0, run.result.stdout + run.result.stderr
+    assert "time to clock the nodes all the way down!" in run.result.stdout
+    assert "time to clock the nodes all the way up!" in run.result.stdout

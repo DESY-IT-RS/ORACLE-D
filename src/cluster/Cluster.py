@@ -180,12 +180,12 @@ class Cluster():
         # Grid summer saving program is to clock running nodes down to their lowest values from 11:30 to 15:30
         if 'middaymaxcd' in self._energy_saving_try:
             if self._simulation_time.get_current_datetime().strftime('%H:%M') in ('11:30','11:31','11:32','11:33','11:34','11:35','11:36','11:37','11:38','11:39'):
-                print("It's 11:30am time to clock down the nodes all the way down!")
+                print("It's 11:30am time to clock the nodes all the way down!")
                 for worker_node in self._worker_nodes:
                     worker_node.clock_minimum()  
 
             if self._simulation_time.get_current_datetime().strftime('%H:%M') in ('15:30','15:31','15:32','15:33','15:34','15:35','15:36','15:37','15:38','15:39'):
-                print("It's 15:30pm time to clock back up the nodes!")
+                print("It's 15:30pm time to clock the nodes all the way up!")
                 for worker_node in self._worker_nodes:
                     worker_node.clock_maximum()        
         
