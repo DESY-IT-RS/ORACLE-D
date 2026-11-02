@@ -245,7 +245,17 @@ class WorkerNode():
             self.change_clock_speed(self.frequencies_available[freqindex+1])
         except IndexError:
             print(f"This machine, {self.hostname}, is already running at its lowest frequency: {self.frequencies_available[freqindex]} GHz.")
-      
+
+    def clock_minimum(self):
+            # Function to decrease the frequency of a node to the lowest available frequency-setting.
+            freqindex = self.frequencies_available.index(self._running_frequency)
+
+            # Change the power setting to the lowest frequency
+            self._powerusage_active = self.powers_available[-1]
+            # Alter the length of a job ratio of the HEPScore in the frequency you are moving to w.r.t the one you are moving from
+            self._dynamic_duration_multiplier = self._HEPScores[freqindex]/self._HEPScores[-1]
+
+            self.change_clock_speed(self.frequencies_available[-1])
 
     def clock_up(self):    
         # Function to increase the frequency of a node by one available frequency-step.
@@ -259,6 +269,17 @@ class WorkerNode():
             self.change_clock_speed(self.frequencies_available[freqindex-1])
         else:
             print(f"This machine, {self.hostname}, is already running at its maximum frequency: {self.frequencies_available[freqindex]} GHz.")
+
+    def clock_maximum(self):
+            # Function to decrease the frequency of a node to the highest available frequency-setting.
+            freqindex = self.frequencies_available.index(self._running_frequency)
+
+            # Change the power setting to the highest stable frequency
+            self._powerusage_active = self.powers_available[0]
+            # Alter the length of a job ratio of the HEPScore in the frequency you are moving to w.r.t the one you are moving from
+            self._dynamic_duration_multiplier = self._HEPScores[freqindex]/self._HEPScores[0]
+
+            self.change_clock_speed(self.frequencies_available[0])
   
     #### @lp.profile
     def update(self):

@@ -17,7 +17,6 @@ logger = Logging.get_logger()
 class DataLogger():
 
     # This should also write to disk...
-
     def __init__(self, config): 
         self._jobs_submitted = 0
         self._jobs_started = 0
@@ -93,7 +92,7 @@ class DataLogger():
         '''
         self._sum_occupancy += timestep_occupancy # kWh
 
-    def print_summary(self, summary_file, additional_description, total_simulated_time, timestepinsec, total_real_time ):
+    def print_summary(self, summary_file, additional_description, peaktime_str, total_simulated_time, timestepinsec, total_real_time ):
         self._avg_jobs_completed = self._jobs_finished + (self._jobs_started - self._jobs_finished)/2
         self._avg_energy_per_job = self._total_energy_consumed/self._avg_jobs_completed
         self._avg_carbon_per_job = self._total_carbon_consumed/self._avg_jobs_completed
@@ -104,28 +103,28 @@ class DataLogger():
         print(f'Summary')
         print(f'========')
         print(f'')   
-        print(f'Total Simulated-time Duration      : {total_simulated_time/3600:4.1f} hours')
-        print(f'Total Real-time Duration           : {total_real_time/60:4.1f} minutes')
+        print(f'Total Simulated-time Duration              : {total_simulated_time/3600:4.1f} hours')
+        print(f'Total Real-time Duration                   : {total_real_time/60:4.1f} minutes')
         print(f'')
         #print(f'')
-        #print(f'Submitted: {self._jobs_submitted}')
-        print(f'Jobs Started                       : {self._jobs_started}')
-        print(f'Jobs Finished                      : {self._jobs_finished}')
-        #print(f'Failed:    {self._jobs_failed}')
-        #print(f'Aborted:   {self._jobs_aborted}')
+        #print(f'Submitted        : {self._jobs_submitted}')
+        print(f'Jobs Started                               : {self._jobs_started}')
+        print(f'Jobs Finished                              : {self._jobs_finished}')
+        #print(f'Failed        :    {self._jobs_failed}')
+        #print(f'Aborted        :   {self._jobs_aborted}')
         print(f'')
-        print(f'Total CPU duration                 : {self._cumulative_cpu_time/3600:6.1f} hours')
-        print(f'Average CPU duration               : {(self._cumulative_cpu_time/3600) / self._jobs_total_cores_used:4.2f} hours')
-        print(f'Average Occupancy of all clusters  : {(self._avg_occupancy*100):3.1f} %')
+        print(f'Total CPU duration                         : {self._cumulative_cpu_time/3600:6.1f} hours')
+        print(f'Average CPU duration                       : {(self._cumulative_cpu_time/3600) / self._jobs_total_cores_used:4.2f} hours')
+        print(f'Average Occupancy of all clusters          : {(self._avg_occupancy*100):3.1f} %')
         print(f'')        
-        print(f'Total energy consumed by compute   : {self._total_energy_consumed:3.2f} kWh')
-        print(f'Peaktime (5-9pm) energy consumption: {self._peaktime_energy_consumed:3.2f} kWh')
-        print(f'Average energy consumption per job : {self._avg_energy_per_job*1e3:3.2f} Wh')
+        print(f'Total energy consumed by compute           : {self._total_energy_consumed:3.2f} kWh')
+        print(f'Peaktime ({peaktime_str}) energy consumption  : {self._peaktime_energy_consumed:3.2f} kWh')
+        print(f'Average energy consumption per job         : {self._avg_energy_per_job*1e3:3.2f} Wh')
         print(f'')
-        print(f'Estimated CO2e emissions           : {self._total_carbon_consumed/1e3:.3f} kg')
-        print(f'Estimated Peaktime CO2e emissions  : {self._peaktime_carbon_consumed/1e3:.3f} kg')
-        print(f'Average CO2e emissions per job     : {self._avg_carbon_per_job:.3f} g')
-        print(f'Peaktime CO2e emissions percentage : {self._peaktime_carbon_consumed/self._total_carbon_consumed*100:.3f} %')
+        print(f'Estimated CO2e emissions                   : {self._total_carbon_consumed/1e3:.3f} kg')
+        print(f'Estimated Peaktime CO2e emissions          : {self._peaktime_carbon_consumed/1e3:.3f} kg')
+        print(f'Average CO2e emissions per job             : {self._avg_carbon_per_job:.3f} g')
+        print(f'Peaktime CO2e emissions percentage         : {self._peaktime_carbon_consumed/self._total_carbon_consumed*100:.3f} %')
         print(f'')
         
         if summary_file == True:
@@ -135,27 +134,27 @@ class DataLogger():
                 outfile.write(f'Summary\n')
                 outfile.write(f'========\n')
                 outfile.write(f'\n')
-                outfile.write(f'Total Simulated-time Duration      : {total_simulated_time/3600:4.1f} hours\n')
-                outfile.write(f'Total Real-time Duration           : {total_real_time/60:4.1f} minutes\n')
+                outfile.write(f'Total Simulated-time Duration              : {total_simulated_time/3600:4.1f} hours\n')
+                outfile.write(f'Total Real-time Duration                   : {total_real_time/60:4.1f} minutes\n')
                 outfile.write(f'\n')                
-                #outfile.write(f'Submitted: {self._jobs_submitted}\n')
-                outfile.write(f'Jobs Started                       : {self._jobs_started}\n')
-                outfile.write(f'Jobs Finished                      : {self._jobs_finished}\n')
-                #outfile.write(f'Failed:    {self._jobs_failed}\n')
-                #outfile.write(f'Aborted:   {self._jobs_aborted}\n')
+                #outfile.write(f'Submitted        : {self._jobs_submitted}\n')
+                outfile.write(f'Jobs Started                               : {self._jobs_started}\n')
+                outfile.write(f'Jobs Finished                              : {self._jobs_finished}\n')
+                #outfile.write(f'Failed        :    {self._jobs_failed}\n')
+                #outfile.write(f'Aborted        :   {self._jobs_aborted}\n')
                 outfile.write(f'\n')
-                outfile.write(f'Total CPU duration                 : {self._cumulative_cpu_time/3600:6.1f} hours\n')
-                outfile.write(f'Average CPU duration               : {(self._cumulative_cpu_time/3600) / self._jobs_total_cores_used:4.2f} hours\n')
-                outfile.write(f'Average Occupancy of all clusters  : {(self._avg_occupancy*100):3.1f} %\n')
+                outfile.write(f'Total CPU duration                         : {self._cumulative_cpu_time/3600:6.1f} hours\n')
+                outfile.write(f'Average CPU duration                       : {(self._cumulative_cpu_time/3600) / self._jobs_total_cores_used:4.2f} hours\n')
+                outfile.write(f'Average Occupancy of all clusters          : {(self._avg_occupancy*100):3.1f} %\n')
                 outfile.write(f'\n')
-                outfile.write(f'Total energy consumed by compute   : {self._total_energy_consumed:3.2f} kWh\n')
-                outfile.write(f'Peaktime (5-9pm) energy consumption: {self._peaktime_energy_consumed:3.2f} kWh\n')
-                outfile.write(f'Average energy consumption per job : {self._avg_energy_per_job*1e3:3.2f} Wh\n')              
+                outfile.write(f'Total energy consumed by compute           : {self._total_energy_consumed:3.2f} kWh\n')
+                outfile.write(f'Peaktime ({peaktime_str}) energy consumption  : {self._peaktime_energy_consumed:3.2f} kWh\n')
+                outfile.write(f'Average energy consumption per job         : {self._avg_energy_per_job*1e3:3.2f} Wh\n')              
                 outfile.write(f'\n')
-                outfile.write(f'Estimated CO2e emissions           : {self._total_carbon_consumed/1e3:.3f} kg\n')
-                outfile.write(f'Estimated Peaktime CO2e emissions  : {self._peaktime_carbon_consumed/1e3:.3f} kg\n')
-                outfile.write(f'Average CO2e emissions per job     : {self._avg_carbon_per_job:.3f} g\n')
-                outfile.write(f'Peaktime CO2e emissions percentage : {self._peaktime_carbon_consumed/self._total_carbon_consumed*100:.3f} %\n')      
+                outfile.write(f'Estimated CO2e emissions                   : {self._total_carbon_consumed/1e3:.3f} kg\n')
+                outfile.write(f'Estimated Peaktime CO2e emissions          : {self._peaktime_carbon_consumed/1e3:.3f} kg\n')
+                outfile.write(f'Average CO2e emissions per job             : {self._avg_carbon_per_job:.3f} g\n')
+                outfile.write(f'Peaktime CO2e emissions percentage         : {self._peaktime_carbon_consumed/self._total_carbon_consumed*100:.3f} %\n')      
                 outfile.write(f'\n')
 
             summary_json_path = os.path.join(self._run_dir, 'summary.json')

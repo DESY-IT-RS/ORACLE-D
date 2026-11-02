@@ -93,6 +93,11 @@ class Simulation():
                                 config["Simulation"]["savings_policy"],
                                 self.CIThresholdValue) # Starting DESY
 
+        self._peaktime_str = None
+        if 'middaymaxcd' in config["Simulation"]["savings_policy"]: 
+            self._peaktime_str = "11:30-15:30"
+        else: 
+            self._peaktime_str = "17:00-21:00"
 
         print('Cluster: ', end='')
         for node, cores in self._cluster._worker_node_inventory.items():
@@ -122,12 +127,12 @@ class Simulation():
 
         self._jobScheduler = JobScheduler(self._simulation_time, self._cluster, config["jobs"]["initial_mix"] , jobs_refill)
         # self._jobScheduler = JobScheduler(self._simulation_time, self._cluster, {'GridPP':100000}, [[{'GridPP':250}, 3600*10]])
-        self._jobdescript  = "RF20PMTest-50000LHCJobs-Base" # Add here what kind of jobs you are running.
+        self._rundescript  = config["output"]["run_label"] # Add here a description of what kind of jobs you are running. "RF20PMTest-50000LHCJobs-Base" for example
 
 
         print ('Jobs: ', end='')
         for vo, jobs in self._jobScheduler._inital_job_mix.items():
-            print(vo + ': ' + str(jobs), end='')
+            print(vo + ': ' + str(jobs), end=' ')
         if self._jobScheduler._regular_incoming_jobs:
             print(' then ', end='')
             for l1 in self._jobScheduler._regular_incoming_jobs:
@@ -254,7 +259,7 @@ class Simulation():
             # First end condition: When we have no jobs running and no more jobs to submit. Flag will be activate in the cluster update.
             if self._cluster._mission_accomplished == True: 
                 realtottime = datetime.now() - self._simulation_time.get_origin_datetime() # Real Time
-                self._datalogger.print_summary(True, self._jobdescript, simtottime.total_seconds(), self._simulation_time.get_timestep(), realtottime.total_seconds())
+                self._datalogger.print_summary(True, self._rundescript, self._peaktime_str, simtottime.total_seconds(), self._simulation_time.get_timestep(), realtottime.total_seconds())
                 
                 if self._verbosity in ["medium", "high"]:
                     logger.info(f'No more jobs!')
@@ -265,7 +270,7 @@ class Simulation():
             # Second end condition: When two weeks in simulation time has passed.
             if simtottime.total_seconds() >= self._simulation_length:
                 realtottime = datetime.now() - self._simulation_time.get_origin_datetime() # Real Time
-                self._datalogger.print_summary(True, self._jobdescript, simtottime.total_seconds(), self._simulation_time.get_timestep(), realtottime.total_seconds())
+                self._datalogger.print_summary(True, self._rundescript, self._peaktime_str, simtottime.total_seconds(), self._simulation_time.get_timestep(), realtottime.total_seconds())
                 
                 if self._verbosity in ["medium", "high"]:
                     logger.info(f'You have been running for a week! Time to stop')
