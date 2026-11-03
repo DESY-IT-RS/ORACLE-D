@@ -191,12 +191,12 @@ class Cluster():
             half_past_eleven = now.replace(hour=11, minute=30, second=0, microsecond=0)
             half_past_three = now.replace(hour=15, minute=30, second=0, microsecond=0)
             if previous_update < half_past_eleven <= now:
-                print("It's 11:30am time to clock down the nodes all the way down!")
+                print("It's 11:30am time to clock the nodes all the way down!")
                 for worker_node in self._worker_nodes:
                     worker_node.clock_minimum()
 
             if previous_update < half_past_three <= now:
-                print("It's 15:30pm time to clock back up the nodes!")
+                print("It's 15:30pm time to clock the nodes all the way back up!")
                 for worker_node in self._worker_nodes:
                     worker_node.clock_maximum()
         
