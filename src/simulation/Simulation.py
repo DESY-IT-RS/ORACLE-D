@@ -22,7 +22,7 @@ logger = Logging.get_logger()
 
 
 class Simulation:
-    def __init__(self, config, inventory):
+    def __init__(self, config, inventory, carbon_intensity_data):
 
         self.desiredStartTime = config[
             "Simulation"
@@ -55,10 +55,8 @@ class Simulation:
         print("Start date: " + self._simulation_time._start_time.strftime("%d/%m/%y"))
         print("Timestep: " + str(self._simulation_time.get_timestep()) + " seconds")
 
-        # Importing average data about the Carbon Intensity of the whole UK grid for the maxumum duration of the simulation.
-        # Carbon Intensity data is in gCO2/kWh.
-        if self._verbosity in ["medium", "high"]:
-            logger.info("Loading in Carbon Intensity Data")
+        # Carbon Intensity data (gCO2/kWh), checked and loaded by util.Verification: one row per segment
+        # from the start segment up to the first row at or after the last update of the simulation.
         datapath = config["carbon_intensity"]["folder"]
         datafile = config["carbon_intensity"]["filename"]
         # Convert start and end segment datetimes to format found in datafile.
@@ -68,40 +66,7 @@ class Simulation:
         self.datafinal_str = datetime.strftime(
             self._simulation_maxfinal_segment, "%Y-%m-%dT%H:%M:%S"
         )
-
-        linesofimport = []
-        datarequired = False
-        with open(datapath + datafile) as file:
-            for line in file.read().splitlines():
-                line = line.split(",")
-
-                if (
-                    line[0] == self.datastart_str
-                ):  # Ignores all lines before the one you want.
-                    datarequired = True
-                elif (
-                    line[0] == self.datafinal_str
-                ):  # Exit file after you have reached the end time value.
-                    datarequired = False
-
-                if (
-                    datarequired == True
-                ):  # Import data when you have found that date you want.
-                    if line[1] == "":  # If there is data missing
-                        print(
-                            "You are missing forecast CI data for the time segment: "
-                            + line[0]
-                        )
-                        sys.exit()
-                    if line[2] == "":  # If there is data missing
-                        print(
-                            "You are missing actual CI data for the time segment: "
-                            + line[0]
-                        )
-                        sys.exit()
-                    linesofimport.append(line)
-
-        self._CIntendata = linesofimport
+        self._CIntendata = carbon_intensity_data
 
         self.CIThresholdValue = config[
             "carbon_intensity"
