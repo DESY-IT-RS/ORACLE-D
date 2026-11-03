@@ -64,9 +64,8 @@ update lands exactly on the boundary.
 - **test_cd1721_clocks_down_only_once_with_small_timesteps** — 5-minute timesteps over
   16:00–18:00; asserts that crossing 17:00 clocks down by exactly one frequency step, once
   (12 steps at 200 W, then 13 at 100 W), not once per update between 17:00 and 17:09.
-- **test_middaymaxcd_triggers_when_no_update_lands_in_the_minute_window** — uses
-  `midday_carbon_intensity.csv` (10:00–17:00, constant 100 gCO2e/kWh) and starts at 10:45
-  with 1-hour timesteps; asserts that the 11:30 clock-to-minimum and the 15:30
+- **test_middaymaxcd_triggers_when_no_update_lands_in_the_minute_window** — starts at 10:45
+  with 1-hour timesteps (`minimal_carbon_intensity.csv` starts at 10:00 for this test); asserts that the 11:30 clock-to-minimum and the 15:30
   clock-to-maximum each fire exactly once, and the exact total and peak-time (11:30–15:30)
   energy and carbon (one step at 200 W, four at 80 W, one at 200 W).
 - **test_highforecast_policy_clocks_down_while_forecast_is_high** — uses

@@ -100,7 +100,6 @@ def test_middaymaxcd_triggers_when_no_update_lands_in_the_minute_window(
     # minimum (80 W) and crossing 15:30 back to the maximum (200 W): 200 W for
     # the first step, 80 W for the four midday steps, 200 W for the last one.
     config = _policy_config(base_config, fixture_paths, "middaymaxcd")
-    config["carbon_intensity"]["filename"] = "midday_carbon_intensity.csv"
     config["Simulation"]["desired_starttime"] = "2024-01-16 10:45"
     config["Simulation"]["simulation_length"] = 18000
     config["Simulation"]["timestep"] = 3600
