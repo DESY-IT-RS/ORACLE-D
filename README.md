@@ -25,14 +25,16 @@ The simulation framework is designed to simulate the amount of energy and carbon
 
 [3] The different saving policies that the simulation can be run with are specified via a setting in config.json. This policy changes the frequency the nodes are run at and at what times of day this is done. Current running options are
 
-| Running Flag  | Description |
-| :------------: | :------ |
-| None          |  Run the nodes as standard  |
-| cd            |  Runs all the nodes clocked down one frequency step from the reported maximum frequency for the entire duration of the simulation    | 
-| cdcd          |  Runs all the nodes clocked down two frequency steps from the reported maximum frequency for the entire duration of the simulation      |
-| cd1721        |  Runs all the nodes clocked down one frequency step from the reported maximum frequency only between the hours of 5pm and 9pm  |
-| cdcd1721      |  Runs all the nodes clocked down two frequency steps from the reported maximum frequency only between the hours of 5pm and 9pm   |
-| highforecast  |  Runs all the nodes clocked down one frequency step from the reported maximum frequency only when the forecasted usage is high (> 400gCO2e/kWh)   |
+| Running Flag    | Description |
+| :------------:  | :------ |
+| None            |  Run the nodes as standard  |
+| cd              |  Runs all the nodes clocked down one frequency step from the reported maximum frequency for the entire duration of the simulation    | 
+| cdcd            |  Runs all the nodes clocked down two frequency steps from the reported maximum frequency for the entire duration of the simulation      |
+| cd1721          |  Runs all the nodes clocked down one frequency step from the reported maximum frequency only between the hours of 5pm and 9pm  |
+| cdcd1721        |  Runs all the nodes clocked down two frequency steps from the reported maximum frequency only between the hours of 5pm and 9pm   |
+| middaymaxcd     |  Runs all the nodes clocked down to the minimum running frequency reported by the machine only between the hours of 11:30am and 15:30pm |
+| highforecast    |  Runs all the nodes clocked down one frequency step from the reported maximum frequency only when the forecasted usage is high (> 400gCO2e/kWh)   |
+
 
 The Simulation has two encoded end conditions
   1) All the jobs sent to the cluster have been completed
@@ -74,8 +76,12 @@ The integration tests currently check that:
 - `src/Main.py --config ...` accepts an explicit configuration file;
 - a minimal GridPP simulation completes and writes its run directory outputs;
 - the generated `summary.json` contains the expected metrics and preserved simulation parameters;
-- each savings policy (`cd`, `cdcd`, `cd1721`, `cdcd1721`, `highforecast`) produces the exactly expected total and peak-time energy and carbon values;
+- each savings policy (`cd`, `cdcd`, `cd1721`, `cdcd1721`, `middaymaxcd`, `highforecast`) produces the exactly expected total and peak-time energy and carbon values;
 - jobs from `regular_incoming_mix` are submitted at the configured interval and started when capacity allows;
+- the time-of-day policies (`cd1721`, `middaymaxcd`) switch exactly once at each boundary time, whatever the timestep and start time;
+- the carbon-intensity pointer keeps up with the half-hour segments when a timestep spans more than one segment;
+- jobs from `regular_incoming_mix` are submitted at the configured interval and started when capacity allows;
+- jobs that do not fit wait in the queue, start as soon as cores are freed, and keep the simulation running until the queue is empty;
 - optionally, the standard `config.json` run agrees with the reference output in `tests/fixtures/default/logs/runs/test/summary.json`, ignoring only wall-clock runtime fields.
 
 A short description of every individual test is kept in `tests/README.md`.
