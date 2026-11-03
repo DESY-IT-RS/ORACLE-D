@@ -11,7 +11,6 @@ def test_queued_job_starts_when_cores_are_freed(run_simulation, base_config):
     # well before the 12-hour limit.
     base_config["Simulation"]["simulation_length"] = 43200
     base_config["Simulation"]["timestep"] = 1800
-    base_config["carbon_intensity"]["filename"] = "overnight_carbon_intensity.csv"
     base_config["jobs"]["initial_mix"] = {"GridPP": 3}
     base_config["output"]["verbosity"] = "high"
 
