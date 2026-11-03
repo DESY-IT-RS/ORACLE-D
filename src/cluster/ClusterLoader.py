@@ -33,7 +33,7 @@ def _load_frequency_map(frequency_csv: Path, strict: bool = True):
     with frequency_csv.open(newline="", encoding="utf-8") as f:
         reader = csv.reader(f)
         _ = next(reader, None)
-        
+
         for row in reader:
             if len(row) < 5:
                 continue
@@ -169,7 +169,9 @@ def load_cluster_inventory(
                 memory_gb = float(row["total_mem_in_Gb"])
                 idle_power_w = float(row["power_min_60d"])
             except (TypeError, ValueError) as exc:
-                message = f"Invalid numeric value in inventory row for {node_key}: {exc}"
+                message = (
+                    f"Invalid numeric value in inventory row for {node_key}: {exc}"
+                )
                 if strict:
                     raise ValueError(message) from exc
                 logger.warning(message)
