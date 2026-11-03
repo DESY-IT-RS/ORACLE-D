@@ -107,8 +107,8 @@ def test_middaymaxcd_triggers_when_no_update_lands_in_the_minute_window(
     run = run_simulation(config, "middaymaxcd_offset")
 
     assert run.result.returncode == 0, run.result.stdout + run.result.stderr
-    assert run.result.stdout.count("It's 11:30am time to clock down the nodes all the way down!") == 1
-    assert run.result.stdout.count("It's 15:30pm time to clock back up the nodes!") == 1
+    assert run.result.stdout.count("It's 11:30am time to clock the nodes all the way down!") == 1
+    assert run.result.stdout.count("It's 15:30pm time to clock the nodes all the way back up!") == 1
 
     summary = json.loads((run.run_dir / "summary.json").read_text())
 
