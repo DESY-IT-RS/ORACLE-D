@@ -87,6 +87,15 @@ update lands exactly on the boundary.
   the later ones stay queued, so exactly 2 jobs start and none finish before the timeout,
   and the refill configuration is preserved in `summary.json`.
 
+## test_job_queue.py
+
+- **test_queued_job_starts_when_cores_are_freed** — runs 3 initial GridPP jobs (1 core,
+  5 hours each) on the 2-thread node with a 12-hour limit (`minimal_carbon_intensity.csv`
+  runs to 06:00 the next day for this test); asserts from `simulation.log` that
+  two jobs start at 16:00 and the queued third job starts at 21:00, in the same update in
+  which the first two finish, and that the run ends at 02:00 once nothing is running or
+  queued (36000 simulated seconds, 3 started, 3 finished, 15 core-hours, 2.0 kWh, 200 g).
+
 ## test_default_config_reference.py
 
 - **test_default_config_run_matches_reference_summary** — opt-in via
