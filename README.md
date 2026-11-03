@@ -76,7 +76,9 @@ The integration tests currently check that:
 - `src/Main.py --config ...` accepts an explicit configuration file;
 - a minimal GridPP simulation completes and writes its run directory outputs;
 - the generated `summary.json` contains the expected metrics and preserved simulation parameters;
-- each savings policy (`cd`, `cdcd`, `cd1721`, `cdcd1721`, `highforecast`) produces the exactly expected total and peak-time energy and carbon values;
+- each savings policy (`cd`, `cdcd`, `cd1721`, `cdcd1721`, `middaymaxcd`, `highforecast`) produces the exactly expected total and peak-time energy and carbon values;
+- the time-of-day policies (`cd1721`, `middaymaxcd`) switch exactly once at each boundary time, whatever the timestep and start time;
+- the carbon-intensity pointer keeps up with the half-hour segments when a timestep spans more than one segment;
 - jobs from `regular_incoming_mix` are submitted at the configured interval and started when capacity allows;
 - optionally, the standard `config.json` run agrees with the reference output in `tests/fixtures/default/logs/runs/test/summary.json`, ignoring only wall-clock runtime fields.
 
