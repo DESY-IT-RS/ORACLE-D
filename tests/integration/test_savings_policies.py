@@ -89,7 +89,9 @@ def test_cd1721_clocks_down_only_once_with_small_timesteps(
 
     summary = json.loads((run.run_dir / "summary.json").read_text())
 
-    assert summary["energy"]["total_kwh"] == pytest.approx((12 * 200 + 13 * 100) * 300 / 3600 / 1000)
+    assert summary["energy"]["total_kwh"] == pytest.approx(
+        (12 * 200 + 13 * 100) * 300 / 3600 / 1000
+    )
 
 
 def test_middaymaxcd_triggers_when_no_update_lands_in_the_minute_window(
@@ -107,8 +109,18 @@ def test_middaymaxcd_triggers_when_no_update_lands_in_the_minute_window(
     run = run_simulation(config, "middaymaxcd_offset")
 
     assert run.result.returncode == 0, run.result.stdout + run.result.stderr
-    assert run.result.stdout.count("It's 11:30am time to clock the nodes all the way down!") == 1
-    assert run.result.stdout.count("It's 15:30pm time to clock the nodes all the way back up!") == 1
+    assert (
+        run.result.stdout.count(
+            "It's 11:30am time to clock the nodes all the way down!"
+        )
+        == 1
+    )
+    assert (
+        run.result.stdout.count(
+            "It's 15:30pm time to clock the nodes all the way back up!"
+        )
+        == 1
+    )
 
     summary = json.loads((run.run_dir / "summary.json").read_text())
 

@@ -3,7 +3,9 @@ import json
 import pytest
 
 
-def test_initial_and_regular_incoming_jobs_run_to_completion(run_simulation, base_config):
+def test_initial_and_regular_incoming_jobs_run_to_completion(
+    run_simulation, base_config
+):
     base_config["Simulation"]["simulation_length"] = 21600
     base_config["Simulation"]["timestep"] = 1800
     base_config["jobs"]["initial_mix"] = {"GridPP": 1}

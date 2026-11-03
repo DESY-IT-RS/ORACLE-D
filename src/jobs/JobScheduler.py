@@ -23,10 +23,6 @@ class JobScheduler:
         inital_job_mix=None,
         regular_incoming_jobs=None,
     ):
-        if regular_incoming_jobs is None:
-            regular_incoming_jobs = [[{"ATLAS": 1, "LHCb": 2}, 3600]]
-        if inital_job_mix is None:
-            inital_job_mix = {"ATLAS": 10, "LHCb": 5}
         self._simulation_time = simulation_time
         self._cluster = cluster_to_submit_jobs_to
 
