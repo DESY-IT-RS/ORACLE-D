@@ -78,6 +78,7 @@ The integration tests currently check that:
 - the generated `summary.json` contains the expected metrics and preserved simulation parameters;
 - each savings policy (`cd`, `cdcd`, `cd1721`, `cdcd1721`, `highforecast`) produces the exactly expected total and peak-time energy and carbon values;
 - jobs from `regular_incoming_mix` are submitted at the configured interval and started when capacity allows;
+- jobs that do not fit wait in the queue, start as soon as cores are freed, and keep the simulation running until the queue is empty;
 - optionally, the standard `config.json` run agrees with the reference output in `tests/fixtures/default/logs/runs/test/summary.json`, ignoring only wall-clock runtime fields.
 
 A short description of every individual test is kept in `tests/README.md`.
