@@ -82,6 +82,13 @@ update lands exactly on the boundary.
 
 ## test_job_refill.py
 
+- **test_initial_and_regular_incoming_jobs_run_to_completion** — runs 1 initial GridPP job
+  plus an hourly `regular_incoming_mix` refill on the 2-thread node over 6 hours
+  (16:00–22:00) with 30-minute timesteps; the initial job and the 17:00 refill run, the
+  later refills queue, and one queued refill starts as each running job finishes (21:00 and
+  22:00). Asserts 4 started and 2 finished jobs (36000 core-seconds), the exact total
+  (1.3 kWh, 130 g) and peak-time (0.7 kWh, 70 g) energy and carbon, and that both the initial
+  and the refill job mix are preserved in `summary.json`.
 - **test_regular_incoming_jobs_are_submitted_and_started** — runs 1 initial GridPP job plus
   an hourly `regular_incoming_mix` refill on a 2-thread node; the 17:00 refill starts while
   the later ones stay queued, so exactly 2 jobs start and none finish before the timeout,
