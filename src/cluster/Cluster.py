@@ -6,12 +6,12 @@
 # For full detailed and legal infomration please read the LICENSE and NOTICE
 #    files in the main directory
 # ===========================================================================
-
-from datetime import datetime
+from collections import deque
+from datetime import datetime, timedelta
 from typing import Any
 
 from cluster.WorkerNode import *
-from simulation.Time import SimulationTime
+from jobs.Jobs import Job
 from util import Logging
 
 logger = Logging.get_logger()
@@ -49,7 +49,7 @@ class Cluster:
 
         self._simulation_time = simulation_time
         self._worker_nodes = []
-        self._queued_jobs = []
+        self._queued_jobs = deque[Job]()
         self._timestep_power_dissipated = 0
         self._timestep_carbon_consumed = 0
         self._timestep_occupancy = 0
@@ -63,7 +63,7 @@ class Cluster:
 
         self._carbondata = carbon_intensity_data
         self._energy_saving_try = es_gimmick
-        self._cditerant = 0  # Create a iterant that marks place in the carbon data list w.r.t simulation time to be incrimented w.r.t the timestep of the simulation.
+        self._cditerant = 0  # Create an iterant that marks place in the carbon data list w.r.t simulation time to be incrimented w.r.t the timestep of the simulation.
         self._CIThresholdValue = carbon_intensity_threshold
         self._in_clkdown = (
             False  # Flags to make decisions based on the status of the cluster.
@@ -131,14 +131,12 @@ class Cluster:
         return False
 
     def cluster_occupancy(self):
-        occ = 0
         coresavail = 0
         coresused = 0
         for node in self._worker_nodes:
             coresavail += node.number_of_cores
             coresused += node.busy_cores
-        occ = coresused / coresavail
-        return occ
+        return coresused / coresavail
 
     def update(self):
         # ---------------------------------
@@ -157,23 +155,16 @@ class Cluster:
             worker_node.update()
 
         ### Queues ###
-        remaining_jobs = []
-
-        # Try to start queued jobs
-        for pending_job in self._queued_jobs:
-            # Try to fill nodes in order
-            for worker_node in self._worker_nodes:
-                if pending_job is not None and worker_node.can_schedule_job(
-                    pending_job
-                ):
-                    worker_node.start_job(pending_job)
-                    pending_job = None
-
-            # If we failed to allocate job to node
-            if pending_job is not None:
-                remaining_jobs.append(pending_job)
-
-        self._queued_jobs = remaining_jobs
+        # Try to start the next queued job
+        next_job = self._queued_jobs.popleft() if self._queued_jobs else None
+        # Try to fill nodes in order
+        for worker_node in self._worker_nodes:
+            while next_job is not None and worker_node.can_schedule_job(next_job):
+                worker_node.start_job(next_job)
+                next_job = self._queued_jobs.popleft() if self._queued_jobs else None
+        # If we failed to allocate the next queued job to a node
+        if next_job is not None:
+            self._queued_jobs.appendleft(next_job)
 
         # ---------------------------------
         #    Termination Check
@@ -187,115 +178,68 @@ class Cluster:
         #    Energy Saving Try Section
         # ---------------------------------
         # Compares the simulation time wrt the time in the hh segment and moves a pointer to the correct hh segment carbon usage.
-        if self._simulation_time.get_current_datetime() > datetime.strptime(
-            self._carbondata[self._cditerant + 1][0], "%Y-%m-%dT%H:%M:%S"
-        ):
+        # A timestep can span several segments, so catch up as far as needed (but never past the last imported segment).
+        while (self._cditerant + 1 < len(self._carbondata)
+               and self._simulation_time.get_current_datetime() > datetime.strptime(self._carbondata[self._cditerant+1][0], '%Y-%m-%dT%H:%M:%S')):
             self._cditerant += 1
 
+        # The time-of-day policies trigger on crossing a boundary since the previous update, so each
+        # fires exactly once per day regardless of timestep size or start offset.
+        now = self._simulation_time.get_current_datetime()
+        previous_update = now - timedelta(seconds=self._simulation_time.get_timestep())
+
         # Code to clock down nodes between 5pm and 9pm everyday
-        if "cd1721" in self._energy_saving_try:
-            if self._simulation_time.get_current_datetime().strftime("%H:%M") in (
-                "17:00",
-                "17:01",
-                "17:02",
-                "17:03",
-                "17:04",
-                "17:05",
-                "17:06",
-                "17:07",
-                "17:08",
-                "17:09",
-            ):
+        if 'cd1721' in self._energy_saving_try:
+            five_pm = now.replace(hour=17, minute=0, second=0, microsecond=0)
+            nine_pm = now.replace(hour=21, minute=0, second=0, microsecond=0)
+            if previous_update < five_pm <= now:
                 print("It's 5pm time to clock down the nodes!")
                 for worker_node in self._worker_nodes:
                     worker_node.clock_down()
-                    if self._energy_saving_try == "cdcd1721":
-                        worker_node.clock_down()
+                    if self._energy_saving_try == 'cdcd1721': worker_node.clock_down()
 
-            if self._simulation_time.get_current_datetime().strftime("%H:%M") in (
-                "21:00",
-                "21:01",
-                "21:02",
-                "21:03",
-                "21:04",
-                "21:05",
-                "21:06",
-                "21:07",
-                "21:08",
-                "21:09",
-            ):
+            if previous_update < nine_pm <= now:
                 print("It's 9pm time to clock up the nodes!")
                 for worker_node in self._worker_nodes:
                     worker_node.clock_up()
-                    if self._energy_saving_try == "cdcd1721":
-                        worker_node.clock_up()
+                    if self._energy_saving_try == 'cdcd1721': worker_node.clock_up()
 
         # Grid summer saving program is to clock running nodes down to their lowest values from 11:30 to 15:30
-        if "middaymaxcd" in self._energy_saving_try:
-            if self._simulation_time.get_current_datetime().strftime("%H:%M") in (
-                "11:30",
-                "11:31",
-                "11:32",
-                "11:33",
-                "11:34",
-                "11:35",
-                "11:36",
-                "11:37",
-                "11:38",
-                "11:39",
-            ):
-                print("It's 11:30am time to clock down the nodes all the way down!")
+        if 'middaymaxcd' in self._energy_saving_try:
+            half_past_eleven = now.replace(hour=11, minute=30, second=0, microsecond=0)
+            half_past_three = now.replace(hour=15, minute=30, second=0, microsecond=0)
+            if previous_update < half_past_eleven <= now:
+                print("It's 11:30am time to clock the nodes all the way down!")
                 for worker_node in self._worker_nodes:
                     worker_node.clock_minimum()
 
-            if self._simulation_time.get_current_datetime().strftime("%H:%M") in (
-                "15:30",
-                "15:31",
-                "15:32",
-                "15:33",
-                "15:34",
-                "15:35",
-                "15:36",
-                "15:37",
-                "15:38",
-                "15:39",
-            ):
-                print("It's 15:30pm time to clock back up the nodes!")
+            if previous_update < half_past_three <= now:
+                print("It's 15:30pm time to clock the nodes all the way back up!")
                 for worker_node in self._worker_nodes:
                     worker_node.clock_maximum()
 
-        # Clocking down nodes when the next hh time segment is forecast to have "high" or "very high" usage.
+        # Clocking down nodes when the next hh timesegment is forecast to have "high" or "very high" usage.
         # A better and more reliable way is to dampen the transition by instead using the numerical equivalent of high which is 200 (g(C02)/kWh).
-        # and requiring the forecast usage to be 205 to switch into clock-down and 195 to switch out of it.
+        # and requiring the forecast usage to be 205 to switch into clockdown and 195 to switch out of it.
         # Even better yet, we can just a threshold that can be user generated.
-        if "highforecast" in self._energy_saving_try:
-            if self._anticipate_clkdown == True:
-                for worker_node in self._worker_nodes:
-                    worker_node.clock_down()
+        if 'highforecast' in self._energy_saving_try:
+            # In the final segment there is no next forecast; keep using the last one.
+            next_segment = min(self._cditerant + 1, len(self._carbondata) - 1)
+            if self._anticipate_clkdown:
+                for worker_node in self._worker_nodes: worker_node.clock_down()
                 self._anticipate_clkdown = False
                 self._in_clkdown = True
 
-            if self._anticipate_clockup == True:
-                for worker_node in self._worker_nodes:
-                    worker_node.clock_up()
+            if self._anticipate_clockup:
+                for worker_node in self._worker_nodes: worker_node.clock_up()
                 self._anticipate_clockup = False
                 self._in_clkdown = False
 
-            if (
-                self._in_clkdown == False
-                and float(self._carbondata[self._cditerant + 1][1])
-                > self._CIThresholdValue + 5
-            ):
-                print(
-                    "Usage is expected to be high, next timestep we'll clock down the nodes."
-                )
+            if self._in_clkdown == False and float(self._carbondata[next_segment][1]) > self._CIThresholdValue+5:
+                print("Usage is expected to be high, next timestep we'll clock down the nodes.")
                 self._anticipate_clkdown = True
 
-            if (
-                self._in_clkdown == True
-                and float(self._carbondata[self._cditerant + 1][1])
-                < self._CIThresholdValue - 5
-            ):
+            if self._in_clkdown == True and float(self._carbondata[next_segment][1]) < self._CIThresholdValue-5:
                 print("Usage is going down, next timestep we'll clock up the nodes.")
                 self._anticipate_clockup = True
 
