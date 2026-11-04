@@ -106,7 +106,12 @@ def _build_worker_node_class(
         self._cpu = cpu_model
         self._year = install_year
 
-    new_class = type(class_name, (base_worker_node_class,), {"__init__": __init__})
+    # The capacity is also kept on the class, so it can be checked without creating nodes.
+    new_class = type(
+        class_name,
+        (base_worker_node_class,),
+        {"__init__": __init__, "node_threads": threads, "node_memory_gb": memory_gb},
+    )
     new_class.__module__ = __name__
     return new_class
 

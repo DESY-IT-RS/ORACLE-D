@@ -62,11 +62,6 @@ class JobScheduler:
         # Format for regular jobs is a tuple of a dictionary of [{'VO1':jobs per X seconds, 'VO2':jobs per X seconds, [...]}, X]
         if self._regular_incoming_jobs is not None:
             for job_list in self._regular_incoming_jobs:
-                if len(job_list) != 2:
-                    raise TypeError(
-                        "The type of jobs in this list of lists should be a tuple of [ {VO : jobs_per_cycle}, cycle_in_sec ]"
-                    )
-
                 dict_VO_jobs_per_cycle = job_list[0]
                 cycle = job_list[1]
                 # Check to see if multiples of cycle number of seconds have gone by.

@@ -14,6 +14,20 @@ from util import Logging
 logger = Logging.get_logger()
 
 
+def find_hh_segment(dt, instruction="current"):
+    nudge = (
+        dt + timedelta(seconds=1)
+    )  # If we start on the half-hour it counts as starting on the previous, so nudge it forward
+    delta = timedelta(minutes=30)
+    next_hh_seg = (
+        nudge + (datetime.min - nudge) % delta
+    )  # finds the half hour segment after a time given in the right format
+    if instruction == "next":
+        return next_hh_seg
+    else:
+        return next_hh_seg - delta
+
+
 class SimulationTime:
     def __init__(self, config_or_time, time=None):
         self._time = None
@@ -55,17 +69,7 @@ class SimulationTime:
             logger.info(f"Set to time: {self._time}")
 
     def find_hh_segment(self, dt, instruction="current"):
-        nudge = (
-            dt + timedelta(seconds=1)
-        )  # If we start on the half-hour it counts as starting on the previous, so nudge it forward
-        delta = timedelta(minutes=30)
-        next_hh_seg = (
-            nudge + (datetime.min - nudge) % delta
-        )  # finds the half hour segment after a time given in the right format
-        if instruction == "next":
-            return next_hh_seg
-        else:
-            return next_hh_seg - delta
+        return find_hh_segment(dt, instruction)
 
     def advance(self):
         self._time += timedelta(seconds=self._timestep_seconds)

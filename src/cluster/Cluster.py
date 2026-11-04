@@ -178,10 +178,9 @@ class Cluster:
         #    Energy Saving Try Section
         # ---------------------------------
         # Compares the simulation time wrt the time in the hh segment and moves a pointer to the correct hh segment carbon usage.
-        # A timestep can span several segments, so catch up as far as needed (but never past the last imported segment).
-        while self._cditerant + 1 < len(
-            self._carbondata
-        ) and self._simulation_time.get_current_datetime() > datetime.strptime(
+        # A timestep can span several segments, so catch up as far as needed. The start-up verification
+        # guarantees a row at or after the last update, so the next segment always exists.
+        while self._simulation_time.get_current_datetime() > datetime.strptime(
             self._carbondata[self._cditerant + 1][0], "%Y-%m-%dT%H:%M:%S"
         ):
             self._cditerant += 1
@@ -228,8 +227,6 @@ class Cluster:
         # and requiring the forecast usage to be 205 to switch into clockdown and 195 to switch out of it.
         # Even better yet, we can just a threshold that can be user generated.
         if "highforecast" in self._energy_saving_try:
-            # In the final segment there is no next forecast; keep using the last one.
-            next_segment = min(self._cditerant + 1, len(self._carbondata) - 1)
             if self._anticipate_clkdown:
                 for worker_node in self._worker_nodes:
                     worker_node.clock_down()
@@ -244,7 +241,7 @@ class Cluster:
 
             if (
                 self._in_clkdown == False
-                and float(self._carbondata[next_segment][1])
+                and float(self._carbondata[self._cditerant + 1][1])
                 > self._CIThresholdValue + 5
             ):
                 print(
@@ -254,7 +251,7 @@ class Cluster:
 
             if (
                 self._in_clkdown == True
-                and float(self._carbondata[next_segment][1])
+                and float(self._carbondata[self._cditerant + 1][1])
                 < self._CIThresholdValue - 5
             ):
                 print("Usage is going down, next timestep we'll clock up the nodes.")
