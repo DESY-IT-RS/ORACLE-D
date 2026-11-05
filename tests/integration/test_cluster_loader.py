@@ -2,7 +2,6 @@ import pytest
 
 from cluster.ClusterLoader import load_cluster_inventory
 from cluster.WorkerNode import WorkerNode
-from simulation.Time import SimulationTime
 
 FREQUENCY_HEADER = "hostname,type,subtype,latest measurement,frequency_power_hepscore\n"
 INVENTORY_HEADER = (
