@@ -14,6 +14,7 @@ from __future__ import annotations
 import csv
 from pathlib import Path
 
+from cluster.WorkerNode import WorkerNode
 from util import Logging
 
 logger = Logging.get_logger()
@@ -76,70 +77,39 @@ def _load_frequency_map(frequency_csv: Path, strict: bool = True):
     return frequencies_by_node
 
 
-def _build_worker_node_class(
-    base_worker_node_class,
-    *,
-    node_key: str,
-    threads: int,
-    memory_gb: float,
-    idle_power_w: float,
-    freq_dep_specs: dict[float, tuple[float, float]],
-    system: str,
-    cpu_model: str,
-    install_year: str,
-):
-    """Create a WorkerNode subclass at runtime for one node type."""
-
-    class_name = f"WorkerNode_{node_key}"
-
-    def __init__(self, simulation_time, hostname=""):
-        base_worker_node_class.__init__(
-            self,
-            simulation_time,
-            f"{node_key}{hostname}",
-            threads,
-            memory_gb,
-            idle_power_w,
-            freq_dep_specs,
-        )
-        self._system = system
-        self._cpu = cpu_model
-        self._year = install_year
-
-    new_class = type(class_name, (base_worker_node_class,), {"__init__": __init__})
-    new_class.__module__ = __name__
-    return new_class
-
-
 def load_cluster_inventory(
     machinegroups_inventory_csv: str | Path,
     frequency_dependence_csv: str | Path,
-    *,
-    base_worker_node_class=None,
     cluster_name: str | None = None,
     strict: bool = True,
-):
-    """Load cluster inventory as a mapping {WorkerNodeSubclass: quantity}.
+) -> tuple[dict[str, int], list[WorkerNode]]:
+    """Load the cluster inventory and initialize `WorkerNode` objects.
 
-    Args:
-        machinegroups_inventory_csv: Path to machine inventory CSV.
-        frequency_dependence_csv: Path to frequency dependence CSV.
-        base_worker_node_class: Base WorkerNode class to subclass. If None,
-            imported from ``cluster.WorkerNodes_DESY_GRID`` for compatibility.
-        cluster_name: Optional filter on ``cluster(main_Puppet_hostgroup)``.
-        strict: If True, raise on malformed/missing data. If False, log and skip.
+    Parameters
+    ----------
+    machinegroups_inventory_csv: str | Path
+        Path to the machine inventory CSV.
+    frequency_dependence_csv: str | Path
+        Path to the frequency dependence CSV.
+    cluster_name: str | None, optional
+        From the ``cluster(main_Puppet_hostgroup)`` column.
+    strict: bool, optional
+        If True, raise error on malformed or missing data.
+        If False, log a warning and skip the entry. Defaults to True.
+
+    Returns
+    ----------
+    tuple: A tuple containing:
+        - An `inventory` dictionary mapping each node key to its quantity.
+        - A list of `WorkerNode` objects instantiated based on the data in that dictionary.
     """
-    if base_worker_node_class is None:
-        # Backward-compatible default while base class still lives there.
-        from cluster.WorkerNode import WorkerNode
-
-        base_worker_node_class = WorkerNode
 
     machinegroups_inventory_csv = _resolve_path(machinegroups_inventory_csv)
     frequency_dependence_csv = _resolve_path(frequency_dependence_csv)
 
     frequencies_by_node = _load_frequency_map(frequency_dependence_csv, strict=strict)
     inventory = {}
+    worker_nodes = []
 
     with machinegroups_inventory_csv.open(newline="", encoding="utf-8") as f:
         reader = csv.DictReader(f)
@@ -177,18 +147,22 @@ def load_cluster_inventory(
                 logger.warning(message)
                 continue
 
-            worker_node_class = _build_worker_node_class(
-                base_worker_node_class,
-                node_key=node_key,
-                threads=threads,
-                memory_gb=memory_gb,
-                idle_power_w=idle_power_w,
-                freq_dep_specs=freq_dep_specs,
-                system=row.get("model", "").strip(),
-                cpu_model=row.get("cpu_model", "").strip(),
-                install_year=row.get("installation_date", "").strip(),
-            )
-            inventory[worker_node_class] = quantity
+            inventory[node_key] = quantity
+            for node_number in range(quantity):
+                # Adds the quantity of nodes specified in the Simulation.
+                worker_nodes.append(
+                    WorkerNode(
+                        node_key,
+                        node_number,
+                        threads,
+                        memory_gb,
+                        idle_power_w,
+                        freq_dep_specs,
+                        row.get("model", "").strip(),
+                        row.get("cpu_model", "").strip(),
+                        int(row.get("installation_date", "").strip()),
+                    )
+                )
 
     logger.info(
         "Loaded %d worker node types from %s and %s",
@@ -196,4 +170,4 @@ def load_cluster_inventory(
         machinegroups_inventory_csv,
         frequency_dependence_csv,
     )
-    return inventory
+    return inventory, worker_nodes
