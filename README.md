@@ -102,6 +102,12 @@ generated `summary.json` to
 `tests/fixtures/default/logs/runs/test/summary.json`.
 
 ## Getting started with the first run
+Before a run, you can check that the configuration and its data files are usable without simulating anything:
+```
+python3 src/Main.py --verify-only
+```
+This prints one `OK` line per check and ends with `Configuration check for .../config.json passed.` If a check fails, it prints an `ERROR` line instead and exits with code 1. Every run does the same check at start-up anyway, see [Start-up verification](#start-up-verification).
+
 To run this simulation in this folder type the command:
 ```
 python3 src/Main.py
@@ -111,6 +117,7 @@ different configuration file, pass it explicitly:
 ```
 python3 src/Main.py --config path/to/config.json
 ```
+Both commands accept `--verify-only`.
 The default running mode is to run 50,000 'GridPP' jobs on the default DESY Grid compute cluster without any special running conditions at medium verbosity. This could run for a couple of minutes and produce a log output, and the folder logs/runs/[DATE]_RF20PMTest-50000GridPP-Base with the summary of the output. The information of grid carbon intensity is taken from data/de_carbon_Intensity_2024_15min.csv. This can be compared to the folder that exists already in the folder which takes the same job mix started at the same time. This is equivalent to the default reference test described in the previous section.
 
 
@@ -118,6 +125,20 @@ The default running mode is to run 50,000 'GridPP' jobs on the default DESY Grid
 Before anything is simulated or written, `src/util/Verification.py` checks the whole configuration and reads the cluster and carbon-intensity files. It collects every problem, prints all warnings and errors together, and stops with exit code 1 if there is at least one error; no run directory is created in that case. Warnings are also written to the run's `simulation.log`. To only run the checks:
 ```
 python3 src/Main.py --config path/to/config.json --verify-only
+```
+With `--verify-only` the report goes to standard output and lists every check in order, with an `OK` line for each one that passed (for example the start time, the cluster size, and how far the carbon data covers the run) and an `ERROR` or `WARNING` line in its place otherwise. A normal run prints only warnings and errors. For example, with a misspelled savings policy:
+```
+Configuration check for config.json:
+  OK: All required config entries are present.
+  OK: Simulation.desired_starttime: 2024-01-16 16:00.
+  OK: Simulation.simulation_length: 604800 s.
+  OK: Simulation.timestep: 600 s.
+  ERROR: Simulation.savings_policy 'sometimes' is not one of none, cd, cdcd, cd1721, cdcd1721, middaymaxcd, highforecast.
+  OK: jobs.initial_mix: {'GridPP': 50000}.
+  ...
+  OK: The carbon_intensity file covers the run up to its last update at 2024-01-23 16:00.
+  OK: All 673 carbon_intensity rows inside the simulation window are valid.
+Found 1 error(s); the simulation was not started.
 ```
 
 It reports what would otherwise make a run hang, crash part-way, or silently produce wrong numbers:
