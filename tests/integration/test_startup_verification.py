@@ -58,7 +58,10 @@ def test_verify_only_checks_without_running(tmp_path, minimal_config):
     )
 
     assert result.returncode == 0, result.stdout + result.stderr
-    assert "passed" in result.stdout
+    assert "  OK: Simulation.timestep: 18000 s." in result.stdout
+    assert "  OK: The carbon_intensity file covers the run" in result.stdout
+    assert "ERROR" not in result.stdout
+    assert result.stdout.rstrip().endswith("passed.")
     assert not minimal_config.run_base_dir.exists()
 
 

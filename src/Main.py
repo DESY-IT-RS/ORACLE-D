@@ -51,11 +51,16 @@ def main(config_path=None, verify_only=False):
 
     # Check the whole config and its data files before anything is written.
     verification = Verification.verify_config(config)
-    if not Verification.report(verification, config_path):
-        sys.exit(1)
+    # With --verify-only the report is the output, so it lists every passed check on stdout.
     if verify_only:
+        if not Verification.report(
+            verification, config_path, stream=sys.stdout, show_passed=True
+        ):
+            sys.exit(1)
         print(f"Configuration check for {config_path} passed.")
         return
+    if not Verification.report(verification, config_path):
+        sys.exit(1)
 
     # Fix a clock-time start once, so the checked carbon window is the simulated one.
     if config["Simulation"]["desired_starttime"] is None:

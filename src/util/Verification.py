@@ -77,6 +77,9 @@ LARGEST_GENERIC_JOB = (8, VOJobFactory("")._memory_required_GB_per_core)
 class VerificationResult:
     errors: list[str] = field(default_factory=list)
     warnings: list[str] = field(default_factory=list)
+    passed: list[str] = field(default_factory=list)
+    # Every outcome as (status, message), in the order the checks ran.
+    log: list[tuple[str, str]] = field(default_factory=list)
     # Filled in when the corresponding checks pass.
     start_time: str | None = None
     inventory: dict | None = None
@@ -86,6 +89,18 @@ class VerificationResult:
     @property
     def ok(self):
         return not self.errors
+
+    def fail(self, message):
+        self.errors.append(message)
+        self.log.append(("ERROR", message))
+
+    def warn(self, message):
+        self.warnings.append(message)
+        self.log.append(("WARNING", message))
+
+    def succeed(self, message):
+        self.passed.append(message)
+        self.log.append(("OK", message))
 
 
 def _is_count(value, minimum):
@@ -117,23 +132,24 @@ def verify_config(config, now=None):
         if not isinstance(config.get(section), dict) or key not in config[section]
     ]
     if missing:
-        result.errors.append(f"Missing config entries: {', '.join(missing)}.")
+        result.fail(f"Missing config entries: {', '.join(missing)}.")
         return result
+    result.succeed("All required config entries are present.")
 
     window = _check_simulation(config["Simulation"], result, now)
     _check_jobs(config["jobs"], result)
 
     threshold = config["carbon_intensity"]["high_CI_threshold"]
     if isinstance(threshold, bool) or not isinstance(threshold, (int, float)):
-        result.errors.append(
+        result.fail(
             f"carbon_intensity.high_CI_threshold must be a number, got {threshold!r}."
         )
+    else:
+        result.succeed(f"carbon_intensity.high_CI_threshold: {threshold} gCO2e/kWh.")
 
     verbosity = config.get("output", {}).get("verbosity")
     if Logging.normalize_verbosity(verbosity) != verbosity:
-        result.warnings.append(
-            f"Invalid output.verbosity {verbosity!r}, defaulting to 'high'."
-        )
+        result.warn(f"Invalid output.verbosity {verbosity!r}, defaulting to 'high'.")
 
     _check_cluster(config["cluster"], config["jobs"], result)
     if window is not None:
@@ -142,16 +158,19 @@ def verify_config(config, now=None):
     return result
 
 
-def report(result, config_path=None, stream=None):
-    """Print warnings and errors; return True if the simulation may start."""
+def report(result, config_path=None, stream=None, show_passed=False):
+    """Print the outcomes (successes only with show_passed); return True if the run may start."""
     stream = stream if stream is not None else sys.stderr
-    if result.warnings or result.errors:
+    entries = [
+        (status, message)
+        for status, message in result.log
+        if show_passed or status != "OK"
+    ]
+    if entries:
         where = f" for {config_path}" if config_path is not None else ""
         print(f"Configuration check{where}:", file=stream)
-    for message in result.warnings:
-        print(f"  WARNING: {message}", file=stream)
-    for message in result.errors:
-        print(f"  ERROR: {message}", file=stream)
+    for status, message in entries:
+        print(f"  {status}: {message}", file=stream)
     if result.errors:
         print(
             f"Found {len(result.errors)} error(s); the simulation was not started.",
@@ -167,11 +186,16 @@ def _check_simulation(section, result, now):
     if raw_start is None:
         # Same rounding as SimulationTime.set_to_current_time().
         start = (now or datetime.now()).replace(second=0, microsecond=0)
+        result.succeed(
+            f"Simulation.desired_starttime: null, the run starts at the current time "
+            f"{start:%Y-%m-%d %H:%M}."
+        )
     else:
         try:
             start = datetime.strptime(raw_start, START_TIME_FORMAT)
+            result.succeed(f"Simulation.desired_starttime: {start:%Y-%m-%d %H:%M}.")
         except (TypeError, ValueError):
-            result.errors.append(
+            result.fail(
                 f"Simulation.desired_starttime {raw_start!r} must be 'YYYY-MM-DD HH:MM' or null."
             )
             valid = False
@@ -179,17 +203,21 @@ def _check_simulation(section, result, now):
     # A timestep of 0 never advances the clock, so the run would never end.
     for key in ("simulation_length", "timestep"):
         if not _is_count(section[key], 1):
-            result.errors.append(
+            result.fail(
                 f"Simulation.{key} must be a positive integer (seconds), got {section[key]!r}."
             )
             valid = False
+        else:
+            result.succeed(f"Simulation.{key}: {section[key]} s.")
 
     # Cluster matches policies by substring, so a typo would silently run as 'none'.
     if section["savings_policy"] not in VALID_SAVINGS_POLICIES:
-        result.errors.append(
+        result.fail(
             f"Simulation.savings_policy {section['savings_policy']!r} is not one of "
             f"{', '.join(VALID_SAVINGS_POLICIES)}."
         )
+    else:
+        result.succeed(f"Simulation.savings_policy: {section['savings_policy']!r}.")
 
     if not valid:
         return None
@@ -205,15 +233,21 @@ def _check_jobs(section, result):
         if not isinstance(mix, dict) or not all(
             _is_count(count, 0) for count in mix.values()
         ):
-            result.errors.append(
+            result.fail(
                 f"jobs.{key} must map VO names to non-negative integers, got {mix!r}."
             )
+        else:
+            result.succeed(f"jobs.{key}: {mix or 'none'}.")
     incoming = section.get("incoming_timestep")
-    if section["regular_incoming_mix"] and not _is_count(incoming, 1):
-        result.errors.append(
+    if not section["regular_incoming_mix"]:
+        return
+    if not _is_count(incoming, 1):
+        result.fail(
             f"jobs.incoming_timestep must be a positive integer (seconds) when "
             f"jobs.regular_incoming_mix is not empty, got {incoming!r}."
         )
+    else:
+        result.succeed(f"jobs.incoming_timestep: {incoming} s.")
 
 
 def _check_cluster(section, jobs, result):
@@ -225,17 +259,22 @@ def _check_cluster(section, jobs, result):
             strict=section["strict"],
         )
     except (KeyError, ValueError, OSError, UnicodeDecodeError, csv.Error) as exc:
-        result.errors.append(
-            f"The cluster files cannot be loaded: {type(exc).__name__}: {exc}"
-        )
+        result.fail(f"The cluster files cannot be loaded: {type(exc).__name__}: {exc}")
         return
+    result.succeed(
+        f"Cluster files '{section['inventory_csv']}' and '{section['frequency_csv']}' loaded."
+    )
 
     if not worker_nodes:
-        result.errors.append(
+        result.fail(
             f"The cluster has no worker nodes: no inventory row of cluster "
             f"{section['cluster_name']!r} with machines and frequency data was loaded."
         )
         return
+    result.succeed(
+        f"Cluster {section['cluster_name']!r} has {len(worker_nodes)} worker node(s) "
+        f"of {len(inventory)} type(s)."
+    )
     result.inventory = inventory
     result.worker_nodes = worker_nodes
 
@@ -251,10 +290,16 @@ def _check_cluster(section, jobs, result):
         cores, gb_per_core = LARGEST_JOB_BY_VO.get(vo, LARGEST_GENERIC_JOB)
         # The nodes are still idle, so this is the scheduler's own test on an empty node.
         largest_job = Job(f"{vo}-largest", 0, gb_per_core, cores)
-        if not any(node.can_schedule_job(largest_job) for node in worker_nodes):
-            result.errors.append(
+        fitting = sum(node.can_schedule_job(largest_job) for node in worker_nodes)
+        if not fitting:
+            result.fail(
                 f"Jobs of VO '{vo}' can need {cores} core(s) and {cores * gb_per_core} GB, "
                 f"but no worker node has that much."
+            )
+        else:
+            result.succeed(
+                f"Jobs of VO '{vo}' (up to {cores} core(s) and {cores * gb_per_core} GB) fit "
+                f"on {fitting} of {len(worker_nodes)} worker node(s)."
             )
 
 
@@ -264,8 +309,9 @@ def _check_carbon_data(section, window, result):
     try:
         lines = path.read_text(encoding="utf-8-sig").splitlines()
     except (OSError, UnicodeDecodeError) as exc:
-        result.errors.append(f"The carbon_intensity file cannot be read: {exc}")
+        result.fail(f"The carbon_intensity file cannot be read: {exc}")
         return
+    result.succeed(f"The carbon_intensity file '{path}' was read.")
 
     start, last_update = window
     start_segment = SimulationTime.find_hh_segment(start)
@@ -301,20 +347,34 @@ def _check_carbon_data(section, window, result):
 
     covered = bool(rows) and rows_end >= last_update
     if not rows:
-        result.errors.append(
+        result.fail(
             f"The carbon_intensity file '{path}' has no row for the start segment "
             f"{start_segment:%Y-%m-%d %H:%M}."
         )
-    elif not covered:
-        result.errors.append(
-            f"The carbon_intensity file '{path}' ends at {rows_end:%Y-%m-%d %H:%M}, but the "
-            f"last update of the run is at {last_update:%Y-%m-%d %H:%M}."
+    else:
+        result.succeed(
+            f"The carbon_intensity file has a row for the start segment "
+            f"{start_segment:%Y-%m-%d %H:%M}."
         )
+        if not covered:
+            result.fail(
+                f"The carbon_intensity file '{path}' ends at {rows_end:%Y-%m-%d %H:%M}, but "
+                f"the last update of the run is at {last_update:%Y-%m-%d %H:%M}."
+            )
+        else:
+            result.succeed(
+                f"The carbon_intensity file covers the run up to its last update at "
+                f"{last_update:%Y-%m-%d %H:%M}."
+            )
     if bad_lines:
         more = f" and {len(bad_lines) - 5} more" if len(bad_lines) > 5 else ""
-        result.errors.append(
+        result.fail(
             f"The carbon_intensity file '{path}' has bad rows inside the simulation window: "
             f"line {', '.join(bad_lines[:5])}{more}."
+        )
+    elif rows:
+        result.succeed(
+            f"All {len(rows)} carbon_intensity rows inside the simulation window are valid."
         )
     if covered and not bad_lines:
         result.carbon_data = rows

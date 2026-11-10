@@ -1,8 +1,9 @@
+import io
 from datetime import datetime, timedelta
 
 import pytest
 
-from util.Verification import verify_config
+from util.Verification import report, verify_config
 
 CARBON_HEADER = "datetime,forecast[gCO2e/kWh],actual[gCO2e/kWh],fracc,index,dataedit"
 
@@ -208,3 +209,45 @@ def test_bad_rows_outside_the_window_are_ignored(base_config, tmp_path):
     _use_carbon_file(base_config, tmp_path, rows)
 
     assert verify_config(base_config).ok
+
+
+# ---------------------------------------------------------------------------
+#   Report of passed checks
+# ---------------------------------------------------------------------------
+
+
+def test_every_check_of_a_valid_config_reports_a_success(base_config):
+    result = verify_config(base_config)
+
+    assert [status for status, _ in result.log] == ["OK"] * len(result.log)
+    assert len(result.passed) == 15
+    assert any("covers the run up to its last update" in m for m in result.passed)
+    assert any("Jobs of VO 'GridPP'" in m for m in result.passed)
+
+
+def test_failed_check_replaces_its_success(base_config):
+    base_config["Simulation"]["savings_policy"] = "sometimes"
+
+    result = verify_config(base_config)
+
+    assert not any("savings_policy" in m for m in result.passed)
+    assert [status for status, m in result.log if "savings_policy" in m] == ["ERROR"]
+
+
+def test_report_lists_successes_only_when_asked(base_config):
+    base_config["Simulation"]["savings_policy"] = "sometimes"
+    result = verify_config(base_config)
+
+    quiet, verbose = io.StringIO(), io.StringIO()
+    report(result, stream=quiet)
+    report(result, stream=verbose, show_passed=True)
+
+    assert "OK:" not in quiet.getvalue()
+    lines = verbose.getvalue().splitlines()
+    # Outcomes keep the order of the checks: the policy error sits between the timestep and job lines.
+    timestep, policy, jobs = (
+        next(i for i, line in enumerate(lines) if text in line)
+        for text in ("Simulation.timestep", "savings_policy", "jobs.initial_mix")
+    )
+    assert timestep < policy < jobs
+    assert lines[policy].startswith("  ERROR:")

@@ -119,7 +119,8 @@ update lands exactly on the boundary.
 - **test_all_config_errors_are_reported_in_one_run** — an invalid policy, a zero timestep, and
   an unknown `cluster_name` are all reported in the same run ("Found 3 error(s)").
 - **test_verify_only_checks_without_running** — `--verify-only` exits with code 0 on the
-  minimal config and creates no run directory.
+  minimal config, lists an `OK` line for each passed check on stdout, and creates no run
+  directory.
 - **test_verification_warnings_are_written_to_the_run_log** — an invalid verbosity is
   reported as a warning in `simulation.log` and the run still completes.
 - **test_highforecast_reads_the_next_forecast_up_to_the_last_carbon_row** — with the last
@@ -143,3 +144,5 @@ CSVs written to `tmp_path`:
 - a start before the carbon file, a file ending before the last update, and missing,
   negative, gapped or duplicate rows inside the window are errors; bad rows outside the window
   are ignored.
+- every check of the valid minimal config records a success; a failed check records an error in
+  its place; `report` prints the `OK` lines only with `show_passed=True`, in check order.
