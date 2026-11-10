@@ -26,6 +26,7 @@ from datetime import datetime, timedelta
 from pathlib import Path
 
 from cluster.ClusterLoader import load_cluster_inventory
+from jobs.Jobs import Job
 from jobs.VOJobFactory import (
     ATLASJobFactory,
     GridPPJobFactory,
@@ -79,6 +80,7 @@ class VerificationResult:
     # Filled in when the corresponding checks pass.
     start_time: str | None = None
     inventory: dict | None = None
+    worker_nodes: list | None = None
     carbon_data: list[list[str]] | None = None
 
     @property
@@ -216,7 +218,7 @@ def _check_jobs(section, result):
 
 def _check_cluster(section, jobs, result):
     try:
-        inventory = load_cluster_inventory(
+        inventory, worker_nodes = load_cluster_inventory(
             section["inventory_csv"],
             section["frequency_csv"],
             cluster_name=section["cluster_name"],
@@ -228,13 +230,14 @@ def _check_cluster(section, jobs, result):
         )
         return
 
-    if sum(inventory.values()) == 0:
+    if not worker_nodes:
         result.errors.append(
             f"The cluster has no worker nodes: no inventory row of cluster "
             f"{section['cluster_name']!r} with machines and frequency data was loaded."
         )
         return
     result.inventory = inventory
+    result.worker_nodes = worker_nodes
 
     # A queued job that fits no node blocks the head of the queue for the rest of the run.
     vos = {
@@ -246,15 +249,12 @@ def _check_cluster(section, jobs, result):
     }
     for vo in sorted(vos):
         cores, gb_per_core = LARGEST_JOB_BY_VO.get(vo, LARGEST_GENERIC_JOB)
-        memory = cores * gb_per_core
-        if not any(
-            node.node_threads >= cores and node.node_memory_gb >= memory
-            for node, quantity in inventory.items()
-            if quantity > 0
-        ):
+        # The nodes are still idle, so this is the scheduler's own test on an empty node.
+        largest_job = Job(f"{vo}-largest", 0, gb_per_core, cores)
+        if not any(node.can_schedule_job(largest_job) for node in worker_nodes):
             result.errors.append(
-                f"Jobs of VO '{vo}' can need {cores} core(s) and {memory} GB, "
-                f"but no worker node type has that much."
+                f"Jobs of VO '{vo}' can need {cores} core(s) and {cores * gb_per_core} GB, "
+                f"but no worker node has that much."
             )
 
 

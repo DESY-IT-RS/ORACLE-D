@@ -82,7 +82,12 @@ def main(config_path=None, verify_only=False):
     for message in verification.warnings:
         logger.warning(message)
 
-    sim = Simulation(config, verification.inventory, verification.carbon_data)
+    sim = Simulation(
+        config,
+        verification.inventory,
+        verification.worker_nodes,
+        verification.carbon_data,
+    )
 
     sim.start()
     # sim2 = Simulation('eveningclock') # Clock down the node at 5pm and up at 9pm

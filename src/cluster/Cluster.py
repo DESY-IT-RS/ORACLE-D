@@ -23,6 +23,7 @@ class Cluster:
         config: dict,
         simulation_time: "SimulationTime",
         worker_node_inventory: dict[str, int],
+        worker_nodes: list[WorkerNode],
         carbon_intensity_data: list[Any],
         es_gimmick: str,
         carbon_intensity_threshold: int = 200,
@@ -48,7 +49,10 @@ class Cluster:
         """
 
         self._simulation_time = simulation_time
-        self._worker_nodes = []
+        self._worker_node_inventory = worker_node_inventory
+        self._worker_nodes = worker_nodes
+        for worker_node in self._worker_nodes:
+            worker_node.simulation_time = simulation_time
         self._queued_jobs = deque[Job]()
         self._timestep_power_dissipated = 0
         self._timestep_carbon_consumed = 0
@@ -72,18 +76,8 @@ class Cluster:
         self._anticipate_clockup = False
 
         self._mission_accomplished = False  # State of completion for the simulation.
-        self._worker_node_inventory = worker_node_inventory
 
         self._verbosity = config["output"]["verbosity"]
-
-        # Create worker nodes from specifications.
-        for node, quantity in worker_node_inventory.items():
-            for node_number in range(quantity):
-                # Adds quantity number of nodes you have specified in the Simulation.
-                self._worker_nodes.append(
-                    node(self._simulation_time, f"-{node_number + 1:03}")
-                )
-
         if self._verbosity in ["high", "medium"]:
             logger.info(
                 f"Created cluster with {self.get_number_of_nodes()} worker nodes and {self.get_number_of_cores()} cores"

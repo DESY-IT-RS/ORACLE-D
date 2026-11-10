@@ -13,43 +13,53 @@ logger = Logging.get_logger()
 class WorkerNode:
     def __init__(
         self,
-        simulation_time: SimulationTime,
-        hostname: str = "",
+        node_key: str = "",
+        node_number: int = 0,
         threads: int = 0,
-        memory: int = 0,
+        memory_gb: float = 0,
         idle_power: float = 0,
-        freq_dep_specs=None,
+        freq_dep_specs: dict[float, tuple[float, float]] | None = None,
+        model: str = "HAL 9000",
+        cpu_model: str = "IBM 7090",
+        year: int = 1992,
     ):
         """Creates a simulated worker node with configurable hardware specs.
 
         Parameters
         ----------
-        simulation_time : simulation.Time.SimulationTime
-            The global simulation time.
-        hostname : str
-            The hostname of the worker node.
+        node_key : str
+            The node key for the simulated worker node.
+        node_number : int
+            The node number for the simulated worker node.
         threads : int
             Number of threads the node has; usually equal to or double the number of cores. Defaults to ``2``.
-        memory : int
+        memory_gb : float
             Amount of RAM available on the node.
         idle_power : float
             Average instantaneous power dissipated by an idle node, in W.
-        freq_dep_specs : dict[float,tuple(float,float)], optional
+        freq_dep_specs : dict[float,tuple[float,float]], optional
             The measured frequency-dependent specifications of the node, mapping a frequency in GHz to a
             ``(power, HEPScore)`` tuple, where ``power`` is the average instantaneous power in W
             and ``HEPScore`` is the score under HEPSCORE v1.5 / HEPScore suite Ver 2.2 at max frequency.
             Defaults to ``None``.
+        model : str
+            Example: 'DELL PowerEdge R6525'
+        cpu_model : str
+            Example: 'AMD EPYC 7402 24-Core Processor'
+        year : int
+            The installation year of the node.
         """
         if freq_dep_specs is None:
             freq_dep_specs = {3.0: (300, 3000), 2.0: (200, 2000), 1.0: (100, 1000)}
-        self._simulation_time = simulation_time
-        self._hostname = hostname
+        self._simulation_time = None
+        self._node_key = node_key
+        self._node_number = node_number
         self._number_of_threads = threads
         self._number_of_cores = (
             self._number_of_threads / 2
         )  # Differentiate for power consumption purposes.
         self._busy_cores = 0
-        self._maximum_RAM = memory
+        self._maximum_RAM = memory_gb
         self._busy_RAM = 0
         self._jobs = []
 
@@ -83,9 +93,9 @@ class WorkerNode:
         )
 
         # Node descriptors
-        self._system = "Arthur C Clarke"
-        self._cpu = "HAL 9000"
-        self._year = "3001"
+        self._model = model
+        self._cpu_model = cpu_model
+        self._year = year
 
         # Handlers
         self._job_started_handler = None
@@ -95,20 +105,24 @@ class WorkerNode:
     # Getters
     # -----------------
     @property
-    def cpu(self):
-        return self._cpu
+    def simulation_time(self):
+        return self._simulation_time
+
+    @property
+    def cpu_model(self):
+        return self._cpu_model
 
     @property
     def hostname(self):
-        return self._hostname
+        return f"{self._node_key}-{self._node_number + 1:03}"
 
     @property
     def jobs(self):
         return self._jobs
 
     @property
-    def system(self):
-        return self._system
+    def model(self):
+        return self._model
 
     @property
     def year(self):
@@ -163,6 +177,12 @@ class WorkerNode:
     # -----------------
     # Setters
     # -----------------
+    @simulation_time.setter
+    def simulation_time(self, value):
+        if not isinstance(value, SimulationTime):
+            raise TypeError("Improper simulation time type.")
+        self._simulation_time = value
+
     @hostname.setter
     def hostname(self, value):
         if not isinstance(value, str):
