@@ -102,12 +102,6 @@ generated `summary.json` to
 `tests/fixtures/default/logs/runs/test/summary.json`.
 
 ## Getting started with the first run
-Before a run, you can check that the configuration and its data files are usable without simulating anything:
-```
-python3 src/Main.py --verify-only
-```
-This prints one `OK` line per check and ends with `Configuration check for .../config.json passed.` If a check fails, it prints an `ERROR` line instead and exits with code 1. Every run does the same check at start-up anyway, see [Start-up verification](#start-up-verification).
-
 To run this simulation in this folder type the command:
 ```
 python3 src/Main.py
