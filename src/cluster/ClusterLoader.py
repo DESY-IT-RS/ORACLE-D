@@ -1,7 +1,10 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2023-2026 Deutsches Elektronen Synchrotron DESY
 #                     and the University of Glasgow
-# Authors: Dwayne Spiteri and Gordon Stewart.
+# For more information about rights and fair use please refer to src/Main.py.
+# For full detailed and legal information please read the LICENSE and NOTICE
+#    files in the main directory
+# ===========================================================================
 
 """Runtime loader for cluster node definitions.
 
