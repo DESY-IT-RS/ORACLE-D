@@ -32,7 +32,7 @@ from jobs.VOJobFactory import (
     LHCbJobFactory,
     VOJobFactory,
 )
-from simulation.Time import find_hh_segment
+from simulation.Time import SimulationTime
 from util import Logging
 
 START_TIME_FORMAT = "%Y-%m-%d %H:%M"
@@ -268,7 +268,7 @@ def _check_carbon_data(section, window, result):
         return
 
     start, last_update = window
-    start_segment = find_hh_segment(start)
+    start_segment = SimulationTime.find_hh_segment(start)
     rows = []
     bad_lines = []
     rows_end = None  # Timestamp of the last accepted row.
