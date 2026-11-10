@@ -2,7 +2,6 @@ import pytest
 
 from cluster.ClusterLoader import load_cluster_inventory
 from cluster.WorkerNode import WorkerNode
-from simulation.Time import SimulationTime
 
 FREQUENCY_HEADER = "hostname,type,subtype,latest measurement,frequency_power_hepscore\n"
 INVENTORY_HEADER = (
@@ -14,7 +13,7 @@ INVENTORY_HEADER = (
 
 
 def test_load_cluster_inventory_from_minimal_csvs(fixture_paths):
-    inventory = load_cluster_inventory(
+    inventory, worker_nodes = load_cluster_inventory(
         fixture_paths.inventory_csv,
         fixture_paths.frequency_csv,
         cluster_name="TEST",
@@ -23,18 +22,12 @@ def test_load_cluster_inventory_from_minimal_csvs(fixture_paths):
 
     assert len(inventory) == 1
 
-    worker_node_class, quantity = next(iter(inventory.items()))
+    node_type, quantity = next(iter(inventory.items()))
+    assert node_type == "TESTNODE_0"
     assert quantity == 1
 
-    simulation_time = SimulationTime(
-        {
-            "output": {
-                "verbosity": "low",
-            }
-        },
-        "2024-01-16 16:00",
-    )
-    worker_node = worker_node_class(simulation_time, "-001")
+    assert len(worker_nodes) == 1
+    worker_node = worker_nodes[0]
 
     assert isinstance(worker_node, WorkerNode)
     assert worker_node.hostname == "TESTNODE_0-001"
@@ -46,7 +39,7 @@ def test_load_cluster_inventory_from_minimal_csvs(fixture_paths):
 
 
 def test_load_cluster_inventory_respects_cluster_filter(fixture_paths):
-    inventory = load_cluster_inventory(
+    inventory, worker_nodes = load_cluster_inventory(
         fixture_paths.inventory_csv,
         fixture_paths.frequency_csv,
         cluster_name="OTHER",
@@ -54,6 +47,7 @@ def test_load_cluster_inventory_respects_cluster_filter(fixture_paths):
     )
 
     assert inventory == {}
+    assert worker_nodes == []
 
 
 def test_load_cluster_inventory_strict_raises_on_malformed_frequency_entry(
@@ -66,10 +60,7 @@ def test_load_cluster_inventory_strict_raises_on_malformed_frequency_entry(
 
     with pytest.raises(ValueError):
         load_cluster_inventory(
-            fixture_paths.inventory_csv,
-            frequency_csv,
-            cluster_name="TEST",
-            strict=True,
+            fixture_paths.inventory_csv, frequency_csv, cluster_name="TEST", strict=True
         )
 
 
@@ -82,25 +73,13 @@ def test_load_cluster_inventory_lenient_skips_malformed_frequency_entry(
         + "test-node,TESTNODE,0,2024-01-01T00:00:00,3000_200,3000_200_1939.60\n"
     )
 
-    inventory = load_cluster_inventory(
-        fixture_paths.inventory_csv,
-        frequency_csv,
-        cluster_name="TEST",
-        strict=False,
+    inventory, worker_nodes = load_cluster_inventory(
+        fixture_paths.inventory_csv, frequency_csv, cluster_name="TEST", strict=False
     )
 
     assert len(inventory) == 1
 
-    worker_node_class = next(iter(inventory))
-    simulation_time = SimulationTime(
-        {
-            "output": {
-                "verbosity": "low",
-            }
-        },
-        "2024-01-16 16:00",
-    )
-    worker_node = worker_node_class(simulation_time)
+    worker_node = worker_nodes[0]
 
     assert worker_node.frequencies_available == [3.0]
     assert worker_node.HEPScore_vs_frequency == [1939.60]
@@ -117,10 +96,7 @@ def test_load_cluster_inventory_strict_raises_on_missing_frequency_data(
 
     with pytest.raises(KeyError):
         load_cluster_inventory(
-            fixture_paths.inventory_csv,
-            frequency_csv,
-            cluster_name="TEST",
-            strict=True,
+            fixture_paths.inventory_csv, frequency_csv, cluster_name="TEST", strict=True
         )
 
 
@@ -133,14 +109,12 @@ def test_load_cluster_inventory_lenient_skips_node_without_frequency_data(
         + "other-node,OTHERNODE,0,2024-01-01T00:00:00,3000_200_1939.60\n"
     )
 
-    inventory = load_cluster_inventory(
-        fixture_paths.inventory_csv,
-        frequency_csv,
-        cluster_name="TEST",
-        strict=False,
+    inventory, worker_nodes = load_cluster_inventory(
+        fixture_paths.inventory_csv, frequency_csv, cluster_name="TEST", strict=False
     )
 
     assert inventory == {}
+    assert worker_nodes == []
 
 
 def test_load_cluster_inventory_strict_raises_on_invalid_numeric_inventory_value(
@@ -155,10 +129,7 @@ def test_load_cluster_inventory_strict_raises_on_invalid_numeric_inventory_value
 
     with pytest.raises(ValueError):
         load_cluster_inventory(
-            inventory_csv,
-            fixture_paths.frequency_csv,
-            cluster_name="TEST",
-            strict=True,
+            inventory_csv, fixture_paths.frequency_csv, cluster_name="TEST", strict=True
         )
 
 
@@ -172,11 +143,9 @@ def test_load_cluster_inventory_lenient_skips_invalid_numeric_inventory_value(
         "1939.60,2024,TEST,1,2,8,50,200\n"
     )
 
-    inventory = load_cluster_inventory(
-        inventory_csv,
-        fixture_paths.frequency_csv,
-        cluster_name="TEST",
-        strict=False,
+    inventory, worker_nodes = load_cluster_inventory(
+        inventory_csv, fixture_paths.frequency_csv, cluster_name="TEST", strict=False
     )
 
     assert inventory == {}
+    assert worker_nodes == []

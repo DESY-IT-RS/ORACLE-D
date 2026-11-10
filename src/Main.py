@@ -45,7 +45,7 @@ def main(config_path=None):
     with open(config_path) as f:
         config = json.load(f)
 
-    inventory = load_cluster_inventory(
+    inventory, worker_nodes = load_cluster_inventory(
         config["cluster"]["inventory_csv"],
         config["cluster"]["frequency_csv"],
         cluster_name=config["cluster"]["cluster_name"],
@@ -74,7 +74,7 @@ def main(config_path=None):
             f"Invalid verbosity value '{verbosity_raw}', defaulting to 'high'"
         )
 
-    sim = Simulation(config, inventory)
+    sim = Simulation(config, inventory, worker_nodes)
 
     sim.start()
     # sim2 = Simulation('eveningclock') # Clock down the node at 5pm and up at 9pm

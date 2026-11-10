@@ -22,7 +22,7 @@ logger = Logging.get_logger()
 
 
 class Simulation:
-    def __init__(self, config, inventory):
+    def __init__(self, config, inventory, worker_nodes):
 
         self.desiredStartTime = config[
             "Simulation"
@@ -107,9 +107,9 @@ class Simulation:
             "carbon_intensity"
         ][
             "high_CI_threshold"
-        ]  #  200gCO2e/kWh - This roughly corresponds to what is labelled 'high' in the UK. For Germany I'll put this at 400
+        ]  #  200gCO2e/kWh - This roughly corresponds to what is labeled 'high' in the UK. For Germany, I'll put this at 400
 
-        # Create the cluster {WorkerNode[unstantiated WN of type WorkerNode]:amount[integer]}
+        # Create the cluster {WorkerNode[instantiated WN of type WorkerNode]:amount[integer]}
         # Types of nodes you can currently use are {WorkerNode_h16, WorkerNode_h17, WorkerNode_d20, WorkerNode_d21, WorkerNode_d22, WorkerNode_a23},
         # the details of which can be accessed in node().system, node().cpu, and node().year.
         # You now pass the carbon data you need to estimate the amount of carbon used (manditory)
@@ -125,6 +125,7 @@ class Simulation:
             config,
             self._simulation_time,
             inventory,
+            worker_nodes,
             self._CIntendata,
             config["Simulation"]["savings_policy"],
             self.CIThresholdValue,
@@ -137,9 +138,6 @@ class Simulation:
             self._peaktime_str = "17:00-21:00"
 
         print("Cluster: ", end="")
-        for node, cores in self._cluster._worker_node_inventory.items():
-            n = node(self._simulation_time)
-            print(n.hostname + ": " + str(cores) + " ", end="")
         print()
         print(f"Energy saving try: {self._cluster.energy_saving_try}")
         print(f"CIThresholdValue: {self.CIThresholdValue}")
@@ -215,11 +213,6 @@ class Simulation:
                 outfile.write("\n")
 
     def _get_simulation_parameters(self, carbon_data_path, carbon_data_file):
-        cluster_inventory = {}
-        for node, quantity in self._cluster._worker_node_inventory.items():
-            worker_node = node(self._simulation_time)
-            cluster_inventory[worker_node.hostname] = quantity
-
         regular_jobs = []
         if self._jobScheduler._regular_incoming_jobs:
             regular_jobs = [
@@ -250,7 +243,7 @@ class Simulation:
             "cluster": {
                 "worker_nodes": self._cluster.get_number_of_nodes(),
                 "worker_cores": self._cluster.get_number_of_cores(),
-                "worker_node_inventory": cluster_inventory,
+                "worker_node_inventory": self._cluster._worker_node_inventory,
             },
             "jobs": {
                 "initial": self._jobScheduler._inital_job_mix,
@@ -294,7 +287,7 @@ class Simulation:
         return ", ".join(f"{vo}: {jobs}" for vo, jobs in job_mix.items())
 
     def start(self):
-        # Permantly run nodes clocked down.
+        # Permanently run nodes clocked down.
         if self._cluster._energy_saving_try == "cd":
             for worker_node in self._cluster._worker_nodes:
                 worker_node.clock_down()
