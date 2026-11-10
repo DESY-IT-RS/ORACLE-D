@@ -228,7 +228,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 
 ## Contributors
-Dwayne Spiteri, Gordon Stewart and Konrad Kockler
+Dwayne Spiteri, Gordon Stewart, Konrad Kockler and Harsha Kumar
 
 
 ## Acknowledgements
@@ -236,4 +236,6 @@ The measurements used here to catagorise the different types of server come from
 
 The carbon intensity data for the UK is taken from the [UK National Grid ESO](https://www.nationalgrideso.com/data-portal/national-carbon-intensity-forecast/national_carbon_intensity_forecast) interpolated to fill in gaps in the data and can be downloaded from [here](https://www.nationalgrideso.com/data-portal/national-carbon-intensity-forecast/national_carbon_intensity_forecast) and for Germany is taken from [Agorameter](https://www.agora-energiewende.de/daten-tools/agorameter) and [Green Grid Compass](https://www.greengrid-compass.eu/).
 
-This code was partially written for the RF2.0 project that has received funding from the European Union’s Horizon Europe research and innovation programme under grant agreement No. 101131850 and from the Swiss State Secretariat for Education Research and Innovation (SERI). Parts of the testing suite were written with the help of codex.
+Parts of the testing suite were written with the help of codex.
+
+This code was partially written for the RF2.0 project that has received funding from the European Union’s Horizon Europe research and innovation programme under grant agreement No. 101131850 and from the Swiss State Secretariat for Education Research and Innovation (SERI). 
