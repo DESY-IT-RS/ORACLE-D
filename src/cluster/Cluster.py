@@ -1,11 +1,11 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2023-2026 Deutsches Elektronen Synchrotron DESY
 #                     and the University of Glasgow
-# Authors: Dwayne Spiteri and Gordon Stewart.
 # For more information about rights and fair use please refer to src/Main.py.
-# For full detailed and legal infomration please read the LICENSE and NOTICE
+# For full detailed and legal information please read the LICENSE and NOTICE
 #    files in the main directory
 # ===========================================================================
+
 from collections import deque
 from datetime import datetime, timedelta
 from typing import Any
