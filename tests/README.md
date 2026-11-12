@@ -146,3 +146,21 @@ CSVs written to `tmp_path`:
   are ignored.
 - every check of the valid minimal config records a success; a failed check records an error in
   its place; `report` prints the `OK` lines only with `show_passed=True`, in check order.
+
+## test_run_logging.py
+
+- **test_low_verbosity_logs_the_lifecycle_and_summary_only** — at `low`, the terminal and
+  `simulation.log` show the parameters, the end condition and the summary, but no simulation
+  days or job lines; `parameters.txt` and `summary.txt` are still written.
+- **test_high_verbosity_keeps_job_lines_out_of_the_terminal** — at `high`, `simulation.log`
+  has the `EVENT` day lines and the `DETAIL` job lines; the terminal shows the days but no job
+  lines.
+- **test_frequency_change_is_logged_once_for_the_whole_cluster** — `cdcd` on the
+  single-frequency node logs one line for the cluster with the number of nodes already at
+  their limit, instead of one message per node.
+
+## unit/test_logging.py
+
+- verbosity `low`/`medium`/`high`/`debug` maps to `INFO`/`EVENT`/`DETAIL`/`DEBUG`, `debug: true`
+  wins, and an invalid verbosity falls back to `high`; the custom levels lie between `INFO` and
+  `DEBUG`; the terminal handler never prints `DETAIL` lines while the file handler does.
