@@ -50,21 +50,21 @@ def main(config_path=None, verify_only=False):
         sys.exit(1)
 
     # Check the whole config and its data files before anything is written.
-    verification = Verification.verify_config(config)
+    verified = Verification.verify_config(config)
     # With --verify-only the report is the output, so it lists every passed check on stdout.
     if verify_only:
         if not Verification.report(
-            verification, config_path, stream=sys.stdout, show_passed=True
+            verified, config_path, stream=sys.stdout, show_passed=True
         ):
             sys.exit(1)
         print(f"Configuration check for {config_path} passed.")
         return
-    if not Verification.report(verification, config_path):
+    if not Verification.report(verified, config_path):
         sys.exit(1)
 
     # Fix a clock-time start once, so the checked carbon window is the simulated one.
     if config["Simulation"]["desired_starttime"] is None:
-        config["Simulation"]["desired_starttime"] = verification.start_time
+        config["Simulation"]["desired_starttime"] = verified.start_time
 
     output_cfg = config.setdefault("output", {})
     config["output"]["verbosity"] = Logging.normalize_verbosity(
@@ -84,14 +84,14 @@ def main(config_path=None, verify_only=False):
     Logging.configure_logger(logger, logging_level, run_dir)
     logger.info(f"Writing run output to {run_dir}")
 
-    for message in verification.warnings:
+    for message in verified.warnings:
         logger.warning(message)
 
     sim = Simulation(
         config,
-        verification.inventory,
-        verification.worker_nodes,
-        verification.carbon_data,
+        verified.inventory,
+        verified.worker_nodes,
+        verified.carbon_data,
     )
 
     sim.start()
