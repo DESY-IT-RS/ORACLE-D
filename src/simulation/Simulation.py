@@ -13,6 +13,7 @@ import sys
 from datetime import datetime, timedelta
 
 from cluster.Cluster import Cluster
+from cluster.WorkerNode import WorkerNode
 from datalogger.DataLogger import DataLogger
 from jobs.JobScheduler import JobScheduler
 from simulation.Time import SimulationTime
@@ -49,11 +50,7 @@ class Simulation:
             "next",
         )
 
-        self._verbosity = config["output"]["verbosity"]
-
-        print("Setting up simulation.")
-        print("Start date: " + self._simulation_time._start_time.strftime("%d/%m/%y"))
-        print("Timestep: " + str(self._simulation_time.get_timestep()) + " seconds")
+        self._run_dir = config["output"].get("run_dir")
 
         # Carbon Intensity data (gCO2/kWh), checked and loaded by util.Verification: one row per segment
         # from the start segment up to the first row at or after the last update of the simulation.
@@ -102,11 +99,6 @@ class Simulation:
         else:
             self._peaktime_str = "17:00-21:00"
 
-        print("Cluster: ", end="")
-        print()
-        print(f"Energy saving try: {self._cluster.energy_saving_try}")
-        print(f"CIThresholdValue: {self.CIThresholdValue}")
-
         # Class to record statistics
         self._datalogger = DataLogger(config)
         self._cluster.set_datalogger_handlers(
@@ -145,30 +137,19 @@ class Simulation:
             "run_label"
         ]  # Add here a description of what kind of jobs you are running. "RF20PMTest-50000LHCJobs-Base" for example
 
-        print("Jobs: ", end="")
-        for vo, jobs in self._jobScheduler._inital_job_mix.items():
-            print(vo + ": " + str(jobs), end=" ")
-        if self._jobScheduler._regular_incoming_jobs:
-            print(" then ", end="")
-            for l1 in self._jobScheduler._regular_incoming_jobs:
-                vos = l1[0]
-                secs = l1[1]
-                for vo, jobs in vos.items():
-                    print(vo + ": " + str(jobs), end=" ")
-                print(" per " + str(secs / 3600) + " hours", end="")
-        print()
+        # The parameters are part of the run output, whatever the log verbosity.
+        simulation_parameters = self._get_simulation_parameters(datapath, datafile)
+        self._datalogger.set_simulation_parameters(simulation_parameters)
+        simulation_parameters_text = self._format_simulation_parameters(
+            simulation_parameters
+        )
+        logger.info(
+            "Created simulation with parameters:\n%s", simulation_parameters_text
+        )
+        self._write_simulation_parameters(simulation_parameters_text)
 
-        if self._verbosity in ["low", "medium", "high"]:
-            simulation_parameters = self._get_simulation_parameters(datapath, datafile)
-            self._datalogger.set_simulation_parameters(simulation_parameters)
-            simulation_parameters_text = self._format_simulation_parameters(
-                simulation_parameters
-            )
-            logger.info(
-                f"Created simulation with parameters:\n{simulation_parameters_text}"
-            )
-            self._write_simulation_parameters(simulation_parameters_text)
-        print("Simulation Started. Good Luck")
+    def _log_finished(self):
+        logger.info("Simulation finished. Output written to %s", self._run_dir)
 
     def _write_simulation_parameters(self, simulation_parameters):
         run_dir = self._datalogger._run_dir
@@ -253,13 +234,14 @@ class Simulation:
 
     def start(self):
         # Permanently run nodes clocked down.
-        if self._cluster._energy_saving_try == "cd":
-            for worker_node in self._cluster._worker_nodes:
-                worker_node.clock_down()
-        if self._cluster._energy_saving_try == "cdcd":
-            for worker_node in self._cluster._worker_nodes:
-                worker_node.clock_down()
-                worker_node.clock_down()
+        if self._cluster._energy_saving_try in ("cd", "cdcd"):
+            steps = len(self._cluster._energy_saving_try) // 2
+            self._cluster.clock_all_nodes(
+                WorkerNode.clock_down,
+                f"clocking down {steps} step(s) for the whole run",
+                steps,
+            )
+        logger.info("Simulation started.")
 
         while True:
             simtottime = (
@@ -278,6 +260,10 @@ class Simulation:
                 realtottime = (
                     datetime.now() - self._simulation_time.get_origin_datetime()
                 )  # Real Time
+                logger.info(
+                    "No jobs left to run or queue; ending the simulation at %s.",
+                    self._simulation_time.get_current_datetime(),
+                )
                 self._datalogger.print_summary(
                     True,
                     self._rundescript,
@@ -286,20 +272,19 @@ class Simulation:
                     self._simulation_time.get_timestep(),
                     realtottime.total_seconds(),
                 )
-
-                if self._verbosity in ["medium", "high"]:
-                    logger.info("No more jobs!")
-                    logger.info(
-                        f"Ending simulation at {self._simulation_time.get_current_datetime()}"
-                    )
-                print("Simulation Finished. Check logs directory for output")
+                self._log_finished()
                 sys.exit()
 
-            # Second end condition: When two weeks in simulation time has passed.
+            # Second end condition: simulation_length seconds of simulation time have passed.
             if simtottime.total_seconds() >= self._simulation_length:
                 realtottime = (
                     datetime.now() - self._simulation_time.get_origin_datetime()
                 )  # Real Time
+                logger.info(
+                    "Reached the simulation length of %s s; ending the simulation at %s.",
+                    self._simulation_length,
+                    self._simulation_time.get_current_datetime(),
+                )
                 self._datalogger.print_summary(
                     True,
                     self._rundescript,
@@ -308,13 +293,7 @@ class Simulation:
                     self._simulation_time.get_timestep(),
                     realtottime.total_seconds(),
                 )
-
-                if self._verbosity in ["medium", "high"]:
-                    logger.info("You have been running for a week! Time to stop")
-                    logger.info(
-                        f"Ending simulation at {self._simulation_time.get_current_datetime()}"
-                    )
-                print("Simulation Finished. Check logs directory for output")
+                self._log_finished()
                 sys.exit()
 
             # Move forward in time

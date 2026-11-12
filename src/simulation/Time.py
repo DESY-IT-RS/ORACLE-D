@@ -23,12 +23,7 @@ class SimulationTime:
         # Backward compatible signatures:
         # - SimulationTime(config, time)
         # - SimulationTime(time_string)
-        if isinstance(config_or_time, dict):
-            config = config_or_time
-            self._verbosity = config.get("output", {}).get("verbosity", "high")
-        else:
-            config = None
-            self._verbosity = "high"
+        if not isinstance(config_or_time, dict):
             time = config_or_time if time is None else time
 
         if time is None:
@@ -40,8 +35,7 @@ class SimulationTime:
 
         self._origin = datetime.now()
 
-        if self._verbosity in ["high", "medium", "low"]:
-            logger.info(f"Set origin: {self._origin}")
+        logger.debug("Set origin: %s", self._origin)
 
     def set_to_current_time(self):
         stringtime = datetime.now().strftime("%Y-%m-%d %H:%M")
@@ -51,8 +45,7 @@ class SimulationTime:
 
     def set_to_time(self, time):
         self._time = time
-        if self._verbosity in ["high", "medium"]:
-            logger.info(f"Set to time: {self._time}")
+        logger.debug("Set to time: %s", self._time)
 
     @staticmethod
     def find_hh_segment(dt, instruction="current"):
@@ -70,7 +63,7 @@ class SimulationTime:
 
     def advance(self):
         self._time += timedelta(seconds=self._timestep_seconds)
-        logger.debug(f"Current time: {self._time}")
+        logger.debug("Current time: %s", self._time)
 
     def get_start_datetime(self):  # Get the start datetime input into the simulation
         return self._start_time

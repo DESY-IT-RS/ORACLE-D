@@ -13,6 +13,9 @@ from jobs.VOJobFactory import (
     LHCbJobFactory,
     VOJobFactory,
 )
+from util import Logging
+
+logger = Logging.get_logger()
 
 
 class JobScheduler:
@@ -95,3 +98,9 @@ class JobScheduler:
                         else:
                             for _ in range(amount):
                                 self._cluster.submit_job(self._basic_job.create_job())
+                    logger.log(
+                        Logging.EVENT,
+                        "%s: submitted refill jobs %s",
+                        self._simulation_time.get_current_datetime(),
+                        dict_VO_jobs_per_cycle,
+                    )

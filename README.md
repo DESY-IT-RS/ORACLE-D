@@ -177,24 +177,30 @@ In this part of the config, the type of jobs that the simpulation will run are s
 | incoming_timestep   | The timestep between job submissions | 
 
 ### output
-This part controls how much information is written to the logfile in the `logs/` directory.
+This part controls how much the run reports and where its output goes.
 
 | Variables to edit  | Description |
 | :------------: | :------ |
-| verbosity | Controls INFO-level logging detail. Valid values are `"low"`, `"medium"`, and `"high"`. |
-| debug | Controls the logging level. If set to true, debug messages are logged alongside information, warnings and errors. |
+| verbosity | How much is logged: `"low"`, `"medium"`, `"high"` or `"debug"`, see below. |
+| debug | Optional. If true, logs everything down to debug messages, whatever `verbosity` says. |
 | log_dir | Optional. Directory where per-run log folders are written. Defaults to `logs/runs`. |
 | run_label | Optional. Human-readable label added to the run folder name. If omitted, the label is generated from the number of initial jobs and the savings policy. |
 
 Each simulation run creates a folder named like `YYYY-MM-DD_HH-MM-SS_<run-label>` under `logs/runs/`. The folder contains `simulation.log`, `summary.txt`, `summary.json`, `parameters.txt`, and a copy of the run `config.json`.
 The `summary.json` file contains both the simulation parameters and the final summary metrics for machine-readable comparisons between runs.
 
-Verbosity behavior:
-- `low`: only high-level lifecycle messages (for example simulation creation) are logged.
-- `medium`: includes major progress messages (for example loading data and simulation end-condition messages).
-- `high`: includes the most detailed INFO logs, including per-job start/finish entries from the data logger.
+All messages go through one logger with two outputs: the terminal and `simulation.log` in the run folder. The verbosity selects the finest level that is logged; each setting includes everything above it:
 
-If `output.verbosity` is not one of `low`, `medium`, or `high`, the start-up verification warns and ORACLE-D defaults to `high`.
+| Verbosity | Level | Adds |
+| :------------: | :------------: | :------ |
+| `low` | `INFO` | the run lifecycle: simulation parameters, start, end condition, summary, plus warnings and errors |
+| `medium` | `EVENT` | events in simulation time: each new simulation day, every savings-policy switch (one line for the whole cluster, with the number of nodes already at their frequency limit), high-forecast decisions, job refills |
+| `high` | `DETAIL` | the start and finish of every job |
+| `debug` | `DEBUG` | per-timestep internals, such as the current time and nodes that cannot change frequency |
+
+The terminal shows the same messages without the per-job `DETAIL` lines, which go to `simulation.log` only. `parameters.txt`, `summary.txt` and `summary.json` are written at every verbosity.
+
+If `output.verbosity` is not one of these values, the start-up verification warns and ORACLE-D defaults to `high`.
 
 ### cluster
 

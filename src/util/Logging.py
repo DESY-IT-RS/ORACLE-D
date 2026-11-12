@@ -11,8 +11,27 @@ import datetime
 import logging
 import os
 import re
+import sys
 
-VALID_VERBOSITY_LEVELS = ("low", "medium", "high")
+# Levels between INFO and DEBUG, so the detail of a run is set by one logger level:
+#   INFO    run lifecycle: parameters, start, end condition, summary (a few per run)
+#   EVENT   events in simulation time: new day, savings-policy switches, job refills
+#   DETAIL  every job start and finish
+#   DEBUG   per-timestep internals
+EVENT = 17
+DETAIL = 15
+logging.addLevelName(EVENT, "EVENT")
+logging.addLevelName(DETAIL, "DETAIL")
+
+VERBOSITY_LEVELS = {
+    "low": logging.INFO,
+    "medium": EVENT,
+    "high": DETAIL,
+    "debug": logging.DEBUG,
+}
+VALID_VERBOSITY_LEVELS = tuple(VERBOSITY_LEVELS)
+# The terminal never shows per-job lines; they go to simulation.log only.
+FINEST_CONSOLE_LEVEL = EVENT
 
 
 def __get_fn_log(log_dir=None):
@@ -30,18 +49,31 @@ def get_logger():
     return logging.getLogger("CLUSTERSIM")
 
 
+def log_level(output_config):
+    """Logger level for the output section: the verbosity, or DEBUG if debug is set."""
+    if output_config.get("debug", False):
+        return logging.DEBUG
+    return VERBOSITY_LEVELS[normalize_verbosity(output_config.get("verbosity"))]
+
+
 def configure_logger(logger, level=logging.INFO, log_dir=None):
+    """Log to simulation.log at `level` and to the terminal at `level`, but never finer than EVENT."""
     logger.setLevel(level)
 
     # Avoid duplicate lines if configure_logger() is called more than once.
     logger.handlers = []
-    handler = logging.FileHandler(__get_fn_log(log_dir))
-    handler.setFormatter(
+    file_handler = logging.FileHandler(__get_fn_log(log_dir))
+    file_handler.setFormatter(
         logging.Formatter(
             "%(asctime)s  %(levelname)s  [%(filename)s:%(funcName)s]  %(message)s"
         )
     )
-    logger.addHandler(handler)
+    logger.addHandler(file_handler)
+
+    console_handler = logging.StreamHandler(sys.stdout)
+    console_handler.setLevel(max(level, FINEST_CONSOLE_LEVEL))
+    console_handler.setFormatter(logging.Formatter("%(message)s"))
+    logger.addHandler(console_handler)
 
 
 def create_run_directory(config):

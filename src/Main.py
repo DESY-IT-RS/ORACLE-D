@@ -23,7 +23,6 @@
 
 import argparse
 import json
-import logging
 import os
 import sys
 from pathlib import Path
@@ -59,7 +58,8 @@ def main(config_path=None, verify_only=False):
             sys.exit(1)
         print(f"Configuration check for {config_path} passed.")
         return
-    if not Verification.report(verified, config_path):
+    if not verified.ok:
+        Verification.report(verified, config_path)
         sys.exit(1)
 
     # Fix a clock-time start once, so the checked carbon window is the simulated one.
@@ -71,19 +71,15 @@ def main(config_path=None, verify_only=False):
         output_cfg.get("verbosity")
     )
 
-    if config["output"].get("debug", False):
-        logging_level = logging.DEBUG
-    else:
-        logging_level = logging.INFO
-
     run_dir = Logging.create_run_directory(config)
     with open(os.path.join(run_dir, "config.json"), "w") as outfile:
         json.dump(config, outfile, indent=4)
         outfile.write("\n")
 
-    Logging.configure_logger(logger, logging_level, run_dir)
-    logger.info(f"Writing run output to {run_dir}")
+    Logging.configure_logger(logger, Logging.log_level(config["output"]), run_dir)
+    logger.info("Writing run output to %s", run_dir)
 
+    # Without errors, the warnings go through the logger: to the terminal and simulation.log.
     for message in verified.warnings:
         logger.warning(message)
 
