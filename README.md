@@ -27,7 +27,7 @@ The simulation framework is designed to simulate the amount of energy and carbon
 
 | Running Flag    | Description |
 | :------------:  | :------ |
-| None            |  Run the nodes as standard  |
+| none            |  Run the nodes as standard  |
 | cd              |  Runs all the nodes clocked down one frequency step from the reported maximum frequency for the entire duration of the simulation    | 
 | cdcd            |  Runs all the nodes clocked down two frequency steps from the reported maximum frequency for the entire duration of the simulation      |
 | cd1721          |  Runs all the nodes clocked down one frequency step from the reported maximum frequency only between the hours of 5pm and 9pm  |
@@ -80,6 +80,7 @@ The integration tests currently check that:
 - jobs from `regular_incoming_mix` are submitted at the configured interval and started when capacity allows;
 - the time-of-day policies (`cd1721`, `middaymaxcd`) switch exactly once at each boundary time, whatever the timestep and start time;
 - the carbon-intensity pointer keeps up with the half-hour segments when a timestep spans more than one segment;
+- the start-up verification reports every config and data problem at once and stops the run before a run directory is created (see [Start-up verification](#start-up-verification));
 - jobs from `regular_incoming_mix` are submitted at the configured interval and started when capacity allows;
 - jobs that do not fit wait in the queue, start as soon as cores are freed, and keep the simulation running until the queue is empty;
 - optionally, the standard `config.json` run agrees with the reference output in `tests/fixtures/default/logs/runs/test/summary.json`, ignoring only wall-clock runtime fields.
@@ -110,8 +111,39 @@ different configuration file, pass it explicitly:
 ```
 python3 src/Main.py --config path/to/config.json
 ```
+Both commands accept `--verify-only`.
 The default running mode is to run 50,000 'GridPP' jobs on the default DESY Grid compute cluster without any special running conditions at medium verbosity. This could run for a couple of minutes and produce a log output, and the folder logs/runs/[DATE]_RF20PMTest-50000GridPP-Base with the summary of the output. The information of grid carbon intensity is taken from data/de_carbon_Intensity_2024_15min.csv. This can be compared to the folder that exists already in the folder which takes the same job mix started at the same time. This is equivalent to the default reference test described in the previous section.
 
+
+## Start-up verification
+Before anything is simulated or written, `src/util/Verification.py` checks the whole configuration and reads the cluster and carbon-intensity files. It collects every problem, prints all warnings and errors together, and stops with exit code 1 if there is at least one error; no run directory is created in that case. Warnings are also written to the run's `simulation.log`. To only run the checks:
+```
+python3 src/Main.py --config path/to/config.json --verify-only
+```
+With `--verify-only` the report goes to standard output and lists every check in order, with an `OK` line for each one that passed (for example the start time, the cluster size, and how far the carbon data covers the run) and an `ERROR` or `WARNING` line in its place otherwise. A normal run prints only warnings and errors. For example, with a misspelled savings policy:
+```
+Configuration check for config.json:
+  OK: All required config entries are present.
+  OK: Simulation.desired_starttime: 2024-01-16 16:00.
+  OK: Simulation.simulation_length: 604800 s.
+  OK: Simulation.timestep: 600 s.
+  ERROR: Simulation.savings_policy 'sometimes' is not one of none, cd, cdcd, cd1721, cdcd1721, middaymaxcd, highforecast.
+  OK: jobs.initial_mix: {'GridPP': 50000}.
+  ...
+  OK: The carbon_intensity file covers the run up to its last update at 2024-01-23 16:00.
+  OK: All 673 carbon_intensity rows inside the simulation window are valid.
+Found 1 error(s); the simulation was not started.
+```
+
+It reports what would otherwise make a run hang, crash part-way, or silently produce wrong numbers:
+- missing config entries, a `simulation_length` or `timestep` that is not a positive integer, a `desired_starttime` that is not `YYYY-MM-DD HH:MM` or `null`, a `savings_policy` that is not exactly one of the policies above, a non-numeric `high_CI_threshold`, job counts that are not non-negative integers, and a missing or non-positive `incoming_timestep` when `regular_incoming_mix` is not empty;
+- cluster files the cluster loader cannot read (with `strict` true, every malformed row), and a cluster with no worker nodes, for example because `cluster_name` matches no inventory row;
+- a VO in the job mixes whose largest job (cores and memory) fits on no node type, since such a job would block the queue for the rest of the run;
+- a carbon-intensity file that cannot be read or does not cover the simulated window. The window starts at the half-hour segment containing the start time and ends at the first row at or after the last update. The last update is at `start + ceil(simulation_length / timestep) * timestep`, so it can lie up to one timestep beyond `start + simulation_length`. Within the window, timestamps must be strictly increasing with at most 30 minutes between rows (15-minute data is fine), and every forecast and actual value must be a non-negative number.
+
+An invalid `output.verbosity` is only a warning; ORACLE-D then uses `high`.
+
+When `desired_starttime` is `null`, the current time is fixed once at start-up and written into the run's copy of `config.json`, so the checked window is the simulated one.
 
 ## Configuration
 The simulation is configured via a JSON config file. The default is `config.json` in the repository root, and another file can be selected with `--config`. In there, all relevant parameters are specified. They are split into several sections dealing with the different parts of the code.
@@ -121,17 +153,17 @@ The parameters that can be changed for the simulation include:
 
 | Variables to edit  | Description |
 | :------------: | :------ |
-| desiredStartTime          | The time at which the simulation starts. Leaving this black defaults to clock time  |
+| desired_starttime          | The time at which the simulation starts, as `"YYYY-MM-DD HH:MM"`. `null` uses the current clock time.  |
 | simulation_length   | The maximum duration that the will simulation will run for in seconds | 
 | timestep   | The timestep the simulation does in between each update in seconds | 
-| savings_policy   | The savings policy specified in an earlier section. The options are "None", "cd", "cdcd", "cd1721", "cdcd1721", and "highforecast". | 
+| savings_policy   | The savings policy specified in an earlier section. The options are "none", "cd", "cdcd", "cd1721", "cdcd1721", "middaymaxcd", and "highforecast". | 
 
 ### carbon_intensity
 The parameters that define information on the carbon intensity. They include:
 
 | Variables to edit  | Description |
 | :------------: | :------ |
-| folder          | The folder where the carbon intensity data is stored  |
+| folder          | The folder where the carbon intensity data is stored. The file must cover the whole simulated window, see [Start-up verification](#start-up-verification).  |
 | filename   | The filename of the carbon intensity data | 
 | high_CI_threshold   | The threshold of what is considered a high carbon intensity in gCO2e/kWh | 
 
@@ -145,24 +177,30 @@ In this part of the config, the type of jobs that the simpulation will run are s
 | incoming_timestep   | The timestep between job submissions | 
 
 ### output
-This part controls how much information is written to the logfile in the `logs/` directory.
+This part controls how much the run reports and where its output goes.
 
 | Variables to edit  | Description |
 | :------------: | :------ |
-| verbosity | Controls INFO-level logging detail. Valid values are `"low"`, `"medium"`, and `"high"`. |
-| debug | Controls the logging level. If set to true, debug messages are logged alongside information, warnings and errors. |
+| verbosity | How much is logged: `"low"`, `"medium"`, `"high"` or `"debug"`, see below. |
+| debug | Optional. If true, logs everything down to debug messages, whatever `verbosity` says. |
 | log_dir | Optional. Directory where per-run log folders are written. Defaults to `logs/runs`. |
 | run_label | Optional. Human-readable label added to the run folder name. If omitted, the label is generated from the number of initial jobs and the savings policy. |
 
 Each simulation run creates a folder named like `YYYY-MM-DD_HH-MM-SS_<run-label>` under `logs/runs/`. The folder contains `simulation.log`, `summary.txt`, `summary.json`, `parameters.txt`, and a copy of the run `config.json`.
 The `summary.json` file contains both the simulation parameters and the final summary metrics for machine-readable comparisons between runs.
 
-Verbosity behavior:
-- `low`: only high-level lifecycle messages (for example simulation creation) are logged.
-- `medium`: includes major progress messages (for example loading data and simulation end-condition messages).
-- `high`: includes the most detailed INFO logs, including per-job start/finish entries from the data logger.
+All messages go through one logger with two outputs: the terminal and `simulation.log` in the run folder. The verbosity selects the finest level that is logged; each setting includes everything above it:
 
-If `output.verbosity` is not one of `low`, `medium`, or `high`, ORACLE-D logs a warning and defaults to `high`.
+| Verbosity | Level | Adds |
+| :------------: | :------------: | :------ |
+| `low` | `INFO` | the run lifecycle: simulation parameters, start, end condition, summary, plus warnings and errors |
+| `medium` | `EVENT` | events in simulation time: each new simulation day, every savings-policy switch (one line for the whole cluster, with the number of nodes already at their frequency limit), high-forecast decisions, job refills |
+| `high` | `DETAIL` | the start and finish of every job |
+| `debug` | `DEBUG` | per-timestep internals, such as the current time and nodes that cannot change frequency |
+
+The terminal shows the same messages without the per-job `DETAIL` lines, which go to `simulation.log` only. `parameters.txt`, `summary.txt` and `summary.json` are written at every verbosity.
+
+If `output.verbosity` is not one of these values, the start-up verification warns and ORACLE-D defaults to `high`.
 
 ### cluster
 

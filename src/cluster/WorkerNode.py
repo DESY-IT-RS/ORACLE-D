@@ -313,8 +313,11 @@ class WorkerNode:
 
             self.change_clock_speed(self.frequencies_available[freqindex + 1])
         except IndexError:
-            print(
-                f"This machine, {self.hostname}, is already running at its lowest frequency: {self.frequencies_available[freqindex]} GHz."
+            # Cluster logs how many nodes could not change for the whole cluster.
+            logger.debug(
+                "%s is already running at its lowest frequency: %s GHz.",
+                self.hostname,
+                self.frequencies_available[freqindex],
             )
 
     def clock_minimum(self):
@@ -343,8 +346,10 @@ class WorkerNode:
 
             self.change_clock_speed(self.frequencies_available[freqindex - 1])
         else:
-            print(
-                f"This machine, {self.hostname}, is already running at its maximum frequency: {self.frequencies_available[freqindex]} GHz."
+            logger.debug(
+                "%s is already running at its maximum frequency: %s GHz.",
+                self.hostname,
+                self.frequencies_available[freqindex],
             )
 
     def clock_maximum(self):

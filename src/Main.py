@@ -23,13 +23,12 @@
 
 import argparse
 import json
-import logging
 import os
+import sys
 from pathlib import Path
 
-from cluster.ClusterLoader import load_cluster_inventory
 from simulation.Simulation import Simulation
-from util import Logging
+from util import Logging, Verification
 
 logger = Logging.get_logger()
 
@@ -38,43 +37,58 @@ def _default_config_path():
     return Path(__file__).parent.parent / "config.json"
 
 
-def main(config_path=None):
+def main(config_path=None, verify_only=False):
     if config_path is None:
         config_path = _default_config_path()
 
-    with open(config_path) as f:
-        config = json.load(f)
+    try:
+        with open(config_path) as f:
+            config = json.load(f)
+    except (OSError, json.JSONDecodeError) as exc:
+        print(f"Cannot read config file {config_path}: {exc}", file=sys.stderr)
+        sys.exit(1)
 
-    inventory, worker_nodes = load_cluster_inventory(
-        config["cluster"]["inventory_csv"],
-        config["cluster"]["frequency_csv"],
-        cluster_name=config["cluster"]["cluster_name"],
-        strict=config["cluster"]["strict"],
-    )
+    # Check the whole config and its data files before anything is written.
+    verified = Verification.verify_config(config)
+    # With --verify-only the report is the output, so it lists every passed check on stdout.
+    if verify_only:
+        if not Verification.report(
+            verified, config_path, stream=sys.stdout, show_passed=True
+        ):
+            sys.exit(1)
+        print(f"Configuration check for {config_path} passed.")
+        return
+    if not verified.ok:
+        Verification.report(verified, config_path)
+        sys.exit(1)
+
+    # Fix a clock-time start once, so the checked carbon window is the simulated one.
+    if config["Simulation"]["desired_starttime"] is None:
+        config["Simulation"]["desired_starttime"] = verified.start_time
 
     output_cfg = config.setdefault("output", {})
-    verbosity_raw = output_cfg.get("verbosity")
-    config["output"]["verbosity"] = Logging.normalize_verbosity(verbosity_raw)
-
-    if config["output"].get("debug", False):
-        logging_level = logging.DEBUG
-    else:
-        logging_level = logging.INFO
+    config["output"]["verbosity"] = Logging.normalize_verbosity(
+        output_cfg.get("verbosity")
+    )
 
     run_dir = Logging.create_run_directory(config)
     with open(os.path.join(run_dir, "config.json"), "w") as outfile:
         json.dump(config, outfile, indent=4)
         outfile.write("\n")
 
-    Logging.configure_logger(logger, logging_level, run_dir)
-    logger.info(f"Writing run output to {run_dir}")
+    Logging.configure_logger(logger, Logging.log_level(config["output"]), run_dir)
+    logger.info("Writing run output to %s", run_dir)
 
-    if verbosity_raw != config["output"]["verbosity"]:
-        logger.warning(
-            f"Invalid verbosity value '{verbosity_raw}', defaulting to 'high'"
-        )
+    # Without errors, the warnings go through the logger: to the terminal and simulation.log.
+    for message in verified.warnings:
+        logger.warning(message)
 
-    sim = Simulation(config, inventory, worker_nodes)
+    sim = Simulation(
+        config,
+        verified.inventory,
+        verified.worker_nodes,
+        verified.carbon_data,
+    )
 
     sim.start()
     # sim2 = Simulation('eveningclock') # Clock down the node at 5pm and up at 9pm
@@ -88,9 +102,14 @@ def _parse_args():
         default=None,
         help="Path to the simulation config JSON file. Defaults to the repository config.json.",
     )
+    parser.add_argument(
+        "--verify-only",
+        action="store_true",
+        help="Only check the config and its cluster and carbon-intensity files, then exit.",
+    )
     return parser.parse_args()
 
 
 if __name__ == "__main__":
     args = _parse_args()
-    main(args.config)
+    main(args.config, args.verify_only)

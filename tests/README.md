@@ -1,6 +1,6 @@
 # Test Overview
 
-All tests are integration tests under `tests/integration/`. They use the small deterministic
+The integration tests live under `tests/integration/`, the unit tests under `tests/unit/`. They use the small deterministic
 fixtures in `tests/fixtures/` and write run output to pytest temporary directories, never to
 `logs/runs/`. Shared fixtures (`fixture_paths`, `base_config`, `minimal_config`,
 `completed_run`, `run_simulation`) live in `tests/conftest.py`; the simulation tests run
@@ -110,3 +110,57 @@ update lands exactly on the boundary.
   copies and compares the resulting `summary.json` to the reference output in
   `tests/fixtures/default/logs/runs/test/summary.json`, ignoring only wall-clock runtime
   fields.
+
+## test_startup_verification.py
+
+- **test_uncovered_carbon_window_aborts_before_creating_a_run_directory** — a start a day
+  before `minimal_carbon_intensity.csv` begins makes `Main.py` exit with code 1, explain the
+  missing start segment on stderr, and create no run directory.
+- **test_all_config_errors_are_reported_in_one_run** — an invalid policy, a zero timestep, and
+  an unknown `cluster_name` are all reported in the same run ("Found 3 error(s)").
+- **test_verify_only_checks_without_running** — `--verify-only` exits with code 0 on the
+  minimal config, lists an `OK` line for each passed check on stdout, and creates no run
+  directory.
+- **test_verification_warnings_are_written_to_the_run_log** — an invalid verbosity is
+  reported as a warning in `simulation.log` and the run still completes.
+- **test_highforecast_reads_the_next_forecast_up_to_the_last_carbon_row** — with the last
+  update exactly on the final row of `highforecast_carbon_intensity.csv` (19:30), the
+  highforecast look-ahead runs without clamping; one step further is rejected because a
+  20:00 row is needed.
+
+## unit/test_verification.py
+
+Calls `util.Verification.verify_config` directly on the minimal config, with small carbon
+CSVs written to `tmp_path`:
+
+- the minimal config passes and returns the inventory and the carbon rows from the start
+  segment up to the first row at or after the last update (02:00 for 21600 s in 18000 s
+  steps); 15-minute carbon data is accepted; a `null` start time is resolved once.
+- missing entries are listed together; invalid timestep, length, start time, savings policy,
+  threshold and job counts are errors; refills need a positive `incoming_timestep`; an invalid
+  verbosity only warns; several problems are reported together.
+- cluster loader errors are reported, and VOs whose largest job fits on no node type are
+  errors.
+- a start before the carbon file, a file ending before the last update, and missing,
+  negative, gapped or duplicate rows inside the window are errors; bad rows outside the window
+  are ignored.
+- every check of the valid minimal config records a success; a failed check records an error in
+  its place; `report` prints the `OK` lines only with `show_passed=True`, in check order.
+
+## test_run_logging.py
+
+- **test_low_verbosity_logs_the_lifecycle_and_summary_only** — at `low`, the terminal and
+  `simulation.log` show the parameters, the end condition and the summary, but no simulation
+  days or job lines; `parameters.txt` and `summary.txt` are still written.
+- **test_high_verbosity_keeps_job_lines_out_of_the_terminal** — at `high`, `simulation.log`
+  has the `EVENT` day lines and the `DETAIL` job lines; the terminal shows the days but no job
+  lines.
+- **test_frequency_change_is_logged_once_for_the_whole_cluster** — `cdcd` on the
+  single-frequency node logs one line for the cluster with the number of nodes already at
+  their limit, instead of one message per node.
+
+## unit/test_logging.py
+
+- verbosity `low`/`medium`/`high`/`debug` maps to `INFO`/`EVENT`/`DETAIL`/`DEBUG`, `debug: true`
+  wins, and an invalid verbosity falls back to `high`; the custom levels lie between `INFO` and
+  `DEBUG`; the terminal handler never prints `DETAIL` lines while the file handler does.
