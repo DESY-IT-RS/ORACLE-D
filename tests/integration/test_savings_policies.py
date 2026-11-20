@@ -81,6 +81,7 @@ def test_cd1721_clocks_down_only_once_with_small_timesteps(
     config = _policy_config(base_config, fixture_paths, "cd1721")
     config["Simulation"]["simulation_length"] = 7200
     config["Simulation"]["timestep"] = 300
+    config["output"]["verbosity"] = "high"
 
     run = run_simulation(config, "cd1721_small_steps")
 
@@ -105,6 +106,7 @@ def test_middaymaxcd_triggers_when_no_update_lands_in_the_minute_window(
     config["Simulation"]["desired_starttime"] = "2024-01-16 10:45"
     config["Simulation"]["simulation_length"] = 18000
     config["Simulation"]["timestep"] = 3600
+    config["output"]["verbosity"] = "high"
 
     run = run_simulation(config, "middaymaxcd_offset")
 

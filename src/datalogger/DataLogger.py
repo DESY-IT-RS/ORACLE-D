@@ -40,7 +40,6 @@ class DataLogger:
         self._avg_occupancy = 0
 
         # verbosity
-        self._verbosity = config["output"]["verbosity"]
         self._run_dir = config["output"].get("run_dir", "logs")
         self._simulation_parameters = {}
 
@@ -51,18 +50,16 @@ class DataLogger:
         pass
 
     def job_start(self, job, worker_node):
-        if self._verbosity in ["high"]:
-            logger.info(
-                f"Starting job {job} on node {worker_node.hostname} at {job.start_time}"
-            )
+        logger.debug(
+            f"Starting job {job} on node {worker_node.hostname} at {job.start_time}"
+        )
         self._jobs_started += 1
         self._jobs_total_cores_used += job.cores_req
 
     def job_finish(self, job, worker_node):
-        if self._verbosity in ["high"]:
-            logger.info(
-                f"Job {job} finished on node {worker_node.hostname} at {job.end_time}"
-            )
+        logger.debug(
+            f"Job {job} finished on node {worker_node.hostname} at {job.end_time}"
+        )
         self._jobs_finished += 1
         self._cumulative_wallclock_time += job.duration
         # Yes, Sam, I know... ;-)
@@ -75,7 +72,7 @@ class DataLogger:
         This should pass power dissipated in per timestep (kWh) such that the total consumption is in kiloWatt-hours
         This should pass carbon consumed in per timestep (g/kWh) such that the total consumption is in grams/kiloWatt-hours
         """
-        # logger.info(f'Cluster {cluster} consumed {cluster.instantaneous_power_consumed} W')
+        # logger.debug(f'Cluster {cluster} consumed {cluster.instantaneous_power_consumed} W')
         self._total_energy_consumed += timestep_energy_consumed  # kWh
         self._total_carbon_consumed += (
             timestep_energy_consumed * timestep_carbon_consumed_per_unit_energy

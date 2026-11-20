@@ -48,16 +48,13 @@ class Simulation:
             "next",
         )
 
-        self._verbosity = config["output"]["verbosity"]
-
-        print("Setting up simulation.")
-        print("Start date: " + self._simulation_time._start_time.strftime("%d/%m/%y"))
-        print("Timestep: " + str(self._simulation_time.get_timestep()) + " seconds")
+        logger.info("Setting up simulation.")
+        logger.info("Start date: " + self._simulation_time._start_time.strftime("%Y-%m-%d %H:%M:%S"))
+        logger.info("Timestep: " + str(self._simulation_time.get_timestep()) + " seconds")
 
         # Importing average data about the Carbon Intensity of the whole UK grid for the maxumum duration of the simulation.
         # Carbon Intensity data is in gCO2/kWh.
-        if self._verbosity in ["medium", "high"]:
-            logger.info("Loading in Carbon Intensity Data")
+        logger.info("Loading in Carbon Intensity Data")
         datapath = config["carbon_intensity"]["folder"]
         datafile = config["carbon_intensity"]["filename"]
         # Convert start and end segment datetimes to format found in datafile.
@@ -87,13 +84,13 @@ class Simulation:
                     datarequired == True
                 ):  # Import data when you have found that date you want.
                     if line[1] == "":  # If there is data missing
-                        print(
+                        logger.critical(
                             "You are missing forecast CI data for the time segment: "
                             + line[0]
                         )
                         sys.exit()
                     if line[2] == "":  # If there is data missing
-                        print(
+                        logger.critical(
                             "You are missing actual CI data for the time segment: "
                             + line[0]
                         )
@@ -136,10 +133,9 @@ class Simulation:
         else:
             self._peaktime_str = "17:00-21:00"
 
-        print("Cluster: ", end="")
-        print()
-        print(f"Energy saving try: {self._cluster.energy_saving_try}")
-        print(f"CIThresholdValue: {self.CIThresholdValue}")
+        logger.info("Cluster: ")
+        logger.info(f"Energy saving try: {self._cluster.energy_saving_try}")
+        logger.info(f"CIThresholdValue: {self.CIThresholdValue}")
 
         # Class to record statistics
         self._datalogger = DataLogger(config)
@@ -179,37 +175,27 @@ class Simulation:
             "run_label"
         ]  # Add here a description of what kind of jobs you are running. "RF20PMTest-50000LHCJobs-Base" for example
 
-        print("Jobs: ", end="")
+        job_info = "Jobs: "
         for vo, jobs in self._jobScheduler._inital_job_mix.items():
-            print(vo + ": " + str(jobs), end=" ")
+            job_info += f"{vo}: {jobs} "
         if self._jobScheduler._regular_incoming_jobs:
-            print(" then ", end="")
+            job_info += " then "
             for l1 in self._jobScheduler._regular_incoming_jobs:
                 vos = l1[0]
                 secs = l1[1]
                 for vo, jobs in vos.items():
-                    print(vo + ": " + str(jobs), end=" ")
-                print(" per " + str(secs / 3600) + " hours", end="")
-        print()
+                    job_info += f"{vo}: {jobs} "
+                job_info += f" per {secs / 3600} hours"
 
-        if self._verbosity in ["low", "medium", "high"]:
-            simulation_parameters = self._get_simulation_parameters(datapath, datafile)
-            self._datalogger.set_simulation_parameters(simulation_parameters)
-            simulation_parameters_text = self._format_simulation_parameters(
-                simulation_parameters
-            )
-            logger.info(
-                f"Created simulation with parameters:\n{simulation_parameters_text}"
-            )
-            self._write_simulation_parameters(simulation_parameters_text)
-        print("Simulation Started. Good Luck")
-
-    def _write_simulation_parameters(self, simulation_parameters):
-        run_dir = self._datalogger._run_dir
-        if run_dir:
-            with open(os.path.join(run_dir, "parameters.txt"), "w") as outfile:
-                outfile.write(simulation_parameters)
-                outfile.write("\n")
+        simulation_parameters = self._get_simulation_parameters(datapath, datafile)
+        self._datalogger.set_simulation_parameters(simulation_parameters)
+        simulation_parameters_text = self._format_simulation_parameters(
+            simulation_parameters
+        )
+        logger.info(
+            f"Created simulation with parameters:\n{simulation_parameters_text}"
+        )
+        logger.info("Simulation Started. Good Luck")
 
     def _get_simulation_parameters(self, carbon_data_path, carbon_data_file):
         regular_jobs = []
@@ -321,12 +307,11 @@ class Simulation:
                     realtottime.total_seconds(),
                 )
 
-                if self._verbosity in ["medium", "high"]:
-                    logger.info("No more jobs!")
-                    logger.info(
-                        f"Ending simulation at {self._simulation_time.get_current_datetime()}"
-                    )
-                print("Simulation Finished. Check logs directory for output")
+                logger.info("No more jobs!")
+                logger.info(
+                    f"Ending simulation at {self._simulation_time.get_current_datetime()}"
+                )
+                logger.info("Simulation Finished. Check logs directory for output")
                 sys.exit()
 
             # Second end condition: When two weeks in simulation time has passed.
@@ -343,12 +328,11 @@ class Simulation:
                     realtottime.total_seconds(),
                 )
 
-                if self._verbosity in ["medium", "high"]:
-                    logger.info("You have been running for a week! Time to stop")
-                    logger.info(
-                        f"Ending simulation at {self._simulation_time.get_current_datetime()}"
-                    )
-                print("Simulation Finished. Check logs directory for output")
+                logger.info("You have been running for a week! Time to stop")
+                logger.info(
+                    f"Ending simulation at {self._simulation_time.get_current_datetime()}"
+                )
+                logger.info("Simulation Finished. Check logs directory for output")
                 sys.exit()
 
             # Move forward in time

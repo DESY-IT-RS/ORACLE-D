@@ -313,7 +313,7 @@ class WorkerNode:
 
             self.change_clock_speed(self.frequencies_available[freqindex + 1])
         except IndexError:
-            print(
+            logger.debug(
                 f"This machine, {self.hostname}, is already running at its lowest frequency: {self.frequencies_available[freqindex]} GHz."
             )
 
@@ -343,7 +343,7 @@ class WorkerNode:
 
             self.change_clock_speed(self.frequencies_available[freqindex - 1])
         else:
-            print(
+            logger.debug(
                 f"This machine, {self.hostname}, is already running at its maximum frequency: {self.frequencies_available[freqindex]} GHz."
             )
 

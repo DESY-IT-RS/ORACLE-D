@@ -23,7 +23,6 @@
 
 import argparse
 import json
-import logging
 import os
 from pathlib import Path
 
@@ -54,12 +53,7 @@ def main(config_path=None):
 
     output_cfg = config.setdefault("output", {})
     verbosity_raw = output_cfg.get("verbosity")
-    config["output"]["verbosity"] = Logging.normalize_verbosity(verbosity_raw)
-
-    if config["output"].get("debug", False):
-        logging_level = logging.DEBUG
-    else:
-        logging_level = logging.INFO
+    logging_level = Logging.map_verbosity(verbosity_raw)
 
     run_dir = Logging.create_run_directory(config)
     with open(os.path.join(run_dir, "config.json"), "w") as outfile:
