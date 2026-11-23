@@ -20,7 +20,6 @@ logger = Logging.get_logger()
 class Cluster:
     def __init__(
         self,
-        config: dict,
         simulation_time: "SimulationTime",
         worker_node_inventory: dict[str, int],
         worker_nodes: list[WorkerNode],
@@ -32,8 +31,6 @@ class Cluster:
 
         Parameters
         ----------
-        config : dict
-            The configuration of the cluster.
         simulation_time : SimulationTime
             The global simulation time.
         worker_node_inventory : dict[WorkerNode,int]
@@ -139,7 +136,7 @@ class Cluster:
         day = self._simulation_time.get_current_datetime().strftime("%d/%m/%Y")
         if day != self._last_day:
             self._days += 1
-            logger.debug(f"{day}: Simulation Day {str(self._days)}")
+            logger.debug(f"{day}: Simulation Day {self._days!s}")
             self._last_day = day
 
         for worker_node in self._worker_nodes:

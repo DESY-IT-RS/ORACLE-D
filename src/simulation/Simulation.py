@@ -7,7 +7,6 @@
 # ===========================================================================
 
 
-import os
 import sys
 from datetime import datetime, timedelta
 
@@ -29,7 +28,7 @@ class Simulation:
             "desired_starttime"
         ]  # STEVE '2018-01-01 00:30' : Starts at the simulation at a set time can be set to any time you wish in the format '2024-01-12 15:00'
         self._simulation_time = SimulationTime(
-            config, self.desiredStartTime
+            self.desiredStartTime
         )  # If you want this to be set to the current time, set desiredStartTime to None
         self._simulation_length = config[
             "Simulation"
@@ -118,7 +117,6 @@ class Simulation:
         # self._cluster = Cluster(self._simulation_time, {WorkerNode_d20:40, WorkerNode_d21:32, WorkerNode_d22:36, WorkerNode_a24:17}, self._CIntendata, 'none') # Future 2
         # DESY
         self._cluster = Cluster(
-            config,
             self._simulation_time,
             inventory,
             worker_nodes,
@@ -293,7 +291,7 @@ class Simulation:
             # Update the state of the cluster
             self._cluster.update()
 
-            # First end condition: When we have no jobs running and no more jobs to submit. Flag will be activate in the cluster update.
+            # First end condition: When we have no jobs running and no more jobs to submit. Flag will be activated in the cluster update.
             if self._cluster._mission_accomplished == True:
                 realtottime = (
                     datetime.now() - self._simulation_time.get_origin_datetime()

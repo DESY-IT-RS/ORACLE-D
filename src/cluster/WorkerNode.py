@@ -29,26 +29,26 @@ class WorkerNode:
 
         Parameters
         ----------
-        node_key : str
+        node_key: str
             The node key for the simulated worker node.
-        node_number : int
+        node_number: int
             The node number for the simulated worker node.
-        threads : int
+        threads: int
             Number of threads the node has; usually equal to or double the number of cores. Defaults to ``2``.
-        memory_gb : float
+        memory_gb: float
             Amount of RAM available on the node.
-        idle_power : float
+        idle_power: float
             Average instantaneous power dissipated by an idle node, in W.
-        freq_dep_specs : dict[float,tuple[float,float]], optional
+        freq_dep_specs: dict[float,tuple[float,float]], optional
             The measured frequency-dependent specifications of the node, mapping a frequency in GHz to a
             ``(power, HEPScore)`` tuple, where ``power`` is the average instantaneous power in W
             and ``HEPScore`` is the score under HEPSCORE v1.5 / HEPScore suite Ver 2.2 at max frequency.
             Defaults to ``None``.
-        model : str
+        model: str
             Example: 'DELL PowerEdge R6525'
-        cpu_model : str
+        cpu_model: str
             Example: 'AMD EPYC 7402 24-Core Processor'
-        year : int
+        year: int
             The installation year of the node.
         """
         if freq_dep_specs is None:
