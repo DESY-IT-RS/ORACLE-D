@@ -71,16 +71,16 @@ class Simulation:
                 line = line.split(",")
 
                 if (
-                    line[0] == self.datastart_str
+                        line[0] == self.datastart_str
                 ):  # Ignores all lines before the one you want.
                     datarequired = True
                 elif (
-                    line[0] == self.datafinal_str
+                        line[0] == self.datafinal_str
                 ):  # Exit file after you have reached the end time value.
                     datarequired = False
 
                 if (
-                    datarequired == True
+                        datarequired == True
                 ):  # Import data when you have found that date you want.
                     if line[1] == "":  # If there is data missing
                         logger.critical(
@@ -102,7 +102,7 @@ class Simulation:
             "carbon_intensity"
         ][
             "high_CI_threshold"
-        ]  #  200gCO2e/kWh - This roughly corresponds to what is labeled 'high' in the UK. For Germany, I'll put this at 400
+        ]  # 200gCO2e/kWh - This roughly corresponds to what is labeled 'high' in the UK. For Germany, I'll put this at 400
 
         # Create the cluster {WorkerNode[instantiated WN of type WorkerNode]:amount[integer]}
         # Types of nodes you can currently use are {WorkerNode_h16, WorkerNode_h17, WorkerNode_d20, WorkerNode_d21, WorkerNode_d22, WorkerNode_a23},
@@ -281,8 +281,8 @@ class Simulation:
 
         while True:
             simtottime = (
-                self._simulation_time.get_current_datetime()
-                - self._simulation_time.get_start_datetime()
+                    self._simulation_time.get_current_datetime()
+                    - self._simulation_time.get_start_datetime()
             )  # Simulated Time
 
             # Update the state of the scheduler
@@ -294,7 +294,7 @@ class Simulation:
             # First end condition: When we have no jobs running and no more jobs to submit. Flag will be activated in the cluster update.
             if self._cluster._mission_accomplished == True:
                 realtottime = (
-                    datetime.now() - self._simulation_time.get_origin_datetime()
+                        datetime.now() - self._simulation_time.get_origin_datetime()
                 )  # Real Time
                 self._datalogger.print_summary(
                     True,
@@ -315,7 +315,7 @@ class Simulation:
             # Second end condition: When two weeks in simulation time has passed.
             if simtottime.total_seconds() >= self._simulation_length:
                 realtottime = (
-                    datetime.now() - self._simulation_time.get_origin_datetime()
+                        datetime.now() - self._simulation_time.get_origin_datetime()
                 )  # Real Time
                 self._datalogger.print_summary(
                     True,

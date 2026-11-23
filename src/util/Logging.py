@@ -33,8 +33,8 @@ def get_logger():
 def configure_logger(logger, level=logging.INFO, log_dir=None):
     logger.setLevel(level)
     formatter = logging.Formatter(
-            "%(asctime)s  %(levelname)s  [%(filename)s:%(funcName)s]  %(message)s"
-        )
+        "%(asctime)s  %(levelname)s  [%(filename)s:%(funcName)s]  %(message)s"
+    )
     # Avoid duplicate lines if configure_logger() is called more than once.
     logger.handlers = []
     stream_handler = logging.StreamHandler(sys.stdout)
@@ -84,7 +84,7 @@ def _slugify(value):
     return slug.lower() or "simulation"
 
 
-def map_verbosity(verbosity_raw:str):
+def map_verbosity(verbosity_raw: str):
     if verbosity_raw == "low":
         return logging.WARNING
     elif verbosity_raw == "medium":
