@@ -19,13 +19,13 @@ logger = Logging.get_logger()
 
 class Cluster:
     def __init__(
-            self,
-            simulation_time: "SimulationTime",
-            worker_node_inventory: dict[str, int],
-            worker_nodes: list[WorkerNode],
-            carbon_intensity_data: list[Any],
-            es_gimmick: str,
-            carbon_intensity_threshold: int = 200,
+        self,
+        simulation_time: "SimulationTime",
+        worker_node_inventory: dict[str, int],
+        worker_nodes: list[WorkerNode],
+        carbon_intensity_data: list[Any],
+        es_gimmick: str,
+        carbon_intensity_threshold: int = 200,
     ):
         """Creates the cluster to be simulated.
 
@@ -78,13 +78,13 @@ class Cluster:
         self._mission_accomplished = False  # State of completion for the simulation.
 
     def set_datalogger_handlers(
-            self,
-            job_submitted,
-            job_started,
-            job_finished,
-            energy_and_carbon_consumed,
-            peaktime_energy_and_carbon_consumed,
-            occupancy,
+        self,
+        job_submitted,
+        job_started,
+        job_finished,
+        energy_and_carbon_consumed,
+        peaktime_energy_and_carbon_consumed,
+        occupancy,
     ):
         self._job_submitted_handler = job_submitted
         self._energy_and_carbon_consumed_handler = energy_and_carbon_consumed
@@ -168,7 +168,7 @@ class Cluster:
         # Compares the simulation time wrt the time in the hh segment and moves a pointer to the correct hh segment carbon usage.
         # A timestep can span several segments, so catch up as far as needed (but never past the last imported segment).
         while self._cditerant + 1 < len(
-                self._carbondata
+            self._carbondata
         ) and self._simulation_time.get_current_datetime() > datetime.strptime(
             self._carbondata[self._cditerant + 1][0], "%Y-%m-%dT%H:%M:%S"
         ):
@@ -207,7 +207,9 @@ class Cluster:
                     worker_node.clock_minimum()
 
             if previous_update < half_past_three <= now:
-                logger.debug("It's 15:30pm time to clock the nodes all the way back up!")
+                logger.debug(
+                    "It's 15:30pm time to clock the nodes all the way back up!"
+                )
                 for worker_node in self._worker_nodes:
                     worker_node.clock_maximum()
 
@@ -231,9 +233,9 @@ class Cluster:
                 self._in_clkdown = False
 
             if (
-                    self._in_clkdown == False
-                    and float(self._carbondata[next_segment][1])
-                    > self._CIThresholdValue + 5
+                self._in_clkdown == False
+                and float(self._carbondata[next_segment][1])
+                > self._CIThresholdValue + 5
             ):
                 logger.info(
                     "Usage is expected to be high, next timestep we'll clock down the nodes."
@@ -241,11 +243,13 @@ class Cluster:
                 self._anticipate_clkdown = True
 
             if (
-                    self._in_clkdown == True
-                    and float(self._carbondata[next_segment][1])
-                    < self._CIThresholdValue - 5
+                self._in_clkdown == True
+                and float(self._carbondata[next_segment][1])
+                < self._CIThresholdValue - 5
             ):
-                logger.info("Usage is going down, next timestep we'll clock up the nodes.")
+                logger.info(
+                    "Usage is going down, next timestep we'll clock up the nodes."
+                )
                 self._anticipate_clockup = True
 
         # --------------------------------------------------------
@@ -270,18 +274,18 @@ class Cluster:
 
         if "middaymaxcd" in self._energy_saving_try:
             if (
-                    datetime.strptime("11:30:00", "%H:%M:%S").time()
-                    < self._simulation_time.get_current_datetime().time()
-                    < datetime.strptime("15:30:00", "%H:%M:%S").time()
+                datetime.strptime("11:30:00", "%H:%M:%S").time()
+                < self._simulation_time.get_current_datetime().time()
+                < datetime.strptime("15:30:00", "%H:%M:%S").time()
             ):
                 self._peaktime_energy_and_carbon_consumed_handler(
                     self._timestep_power_dissipated, self._timestep_carbon_consumed
                 )
 
         elif (
-                datetime.strptime("17:00:00", "%H:%M:%S").time()
-                < self._simulation_time.get_current_datetime().time()
-                < datetime.strptime("21:00:00", "%H:%M:%S").time()
+            datetime.strptime("17:00:00", "%H:%M:%S").time()
+            < self._simulation_time.get_current_datetime().time()
+            < datetime.strptime("21:00:00", "%H:%M:%S").time()
         ):
             self._peaktime_energy_and_carbon_consumed_handler(
                 self._timestep_power_dissipated, self._timestep_carbon_consumed
