@@ -60,6 +60,7 @@ def test_cd1721_triggers_when_no_update_lands_exactly_on_the_hour(
     config["Simulation"]["desired_starttime"] = "2024-01-16 16:30"
     config["Simulation"]["simulation_length"] = 14400
     config["Simulation"]["timestep"] = 3600
+    config["output"]["verbosity"] = "high"
 
     run = run_simulation(config, "cd1721_offset")
 
