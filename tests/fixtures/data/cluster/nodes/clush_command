@@ -1,0 +1,1 @@
+clush --user=root -w node-[a,b].test --rcopy /root/inv_test --dest /home/test/

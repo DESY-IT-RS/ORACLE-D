@@ -251,3 +251,38 @@ def test_report_lists_successes_only_when_asked(base_config):
     )
     assert timestep < policy < jobs
     assert lines[policy].startswith("  ERROR:")
+
+
+def _use_node_dir(config, node_dir, cluster_name=None):
+    del config["cluster"]["inventory_csv"], config["cluster"]["frequency_csv"]
+    config["cluster"]["inventory_dir"] = str(node_dir)
+    config["cluster"]["cluster_name"] = cluster_name
+
+
+def test_inventory_dir_config_loads_one_node_per_machine(base_config, fixture_paths):
+    _use_node_dir(base_config, fixture_paths.node_dir)
+
+    result = verify_config(base_config)
+
+    assert result.ok, result.errors
+    assert result.inventory == {"node-a.test": 1, "node-b.test": 1}
+    assert [node.hostname for node in result.worker_nodes] == ["node-a.test", "node-b.test"]
+
+
+def test_inventory_dir_cluster_name_filters_on_group(base_config, fixture_paths):
+    _use_node_dir(base_config, fixture_paths.node_dir, cluster_name="NOPE")
+
+    _assert_error(verify_config(base_config), "no worker nodes", "group 'NOPE'")
+
+
+@pytest.mark.parametrize(
+    "keys", [(), ("inventory_csv",), ("inventory_csv", "frequency_csv", "inventory_dir")]
+)
+def test_cluster_needs_exactly_one_data_source(base_config, fixture_paths, keys):
+    cluster = base_config["cluster"]
+    cluster["inventory_dir"] = str(fixture_paths.node_dir)
+    for key in ("inventory_csv", "frequency_csv", "inventory_dir"):
+        if key not in keys:
+            del cluster[key]
+
+    _assert_error(verify_config(base_config), "either inventory_csv and frequency_csv")

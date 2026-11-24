@@ -1,0 +1,29 @@
+{
+  "node_id": "node-a.test",
+  "group": "TEST",
+  "installation_date": "2024-01-01",
+  "number_of_vcores": 2,
+  "power_consumption": {
+    "idle": 50.0,
+    "cpu_frequency_dependence": {
+      "cpu_frequency_Mhz": [
+        3000
+      ],
+      "hepscore": [
+        1939.6
+      ],
+      "power_W": [
+        200.0
+      ]
+    }
+  },
+  "cpu": {
+    "model": "Test CPU"
+  },
+  "ramList": [
+    {
+      "number_of_modules": 1,
+      "storage_per_module_gb": 8
+    }
+  ]
+}

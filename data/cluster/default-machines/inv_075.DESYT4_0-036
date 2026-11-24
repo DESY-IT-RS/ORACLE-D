@@ -1,0 +1,47 @@
+{
+  "node_id": "DESYT4_0-036",
+  "group": "DEFAULT",
+  "installation_date": "2017-01-01",
+  "number_of_vcores": 40,
+  "power_consumption": {
+    "idle": 112.0,
+    "cpu_frequency_dependence": {
+      "cpu_frequency_Mhz": [
+        2400,
+        2200,
+        2000,
+        1800,
+        1600,
+        1400,
+        1200
+      ],
+      "hepscore": [
+        392.74,
+        363.84,
+        333.06,
+        297.68,
+        271.44,
+        239.32,
+        206.97
+      ],
+      "power_W": [
+        224.14,
+        212.15,
+        201.3,
+        190.34,
+        179.26,
+        169.33,
+        160.9
+      ]
+    }
+  },
+  "cpu": {
+    "model": "Intel(R) Xeon(R) CPU E5-2640 v4"
+  },
+  "ramList": [
+    {
+      "number_of_modules": 1,
+      "storage_per_module_gb": 128
+    }
+  ]
+}

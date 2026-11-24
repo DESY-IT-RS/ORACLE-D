@@ -1,0 +1,50 @@
+{
+  "node_id": "DESYT13_0-008",
+  "group": "DEFAULT",
+  "installation_date": "2021-01-01",
+  "number_of_vcores": 96,
+  "power_consumption": {
+    "idle": 180.0,
+    "cpu_frequency_dependence": {
+      "cpu_frequency_Mhz": [
+        2850,
+        2700,
+        2500,
+        2300,
+        2100,
+        1900,
+        1700,
+        1500
+      ],
+      "hepscore": [
+        1617,
+        1607.11,
+        1618.62,
+        1599.07,
+        993.06,
+        1012.81,
+        1005.73,
+        724.8
+      ],
+      "power_W": [
+        566.94,
+        567.3,
+        567.73,
+        569.78,
+        326.06,
+        325.39,
+        326.39,
+        277.43
+      ]
+    }
+  },
+  "cpu": {
+    "model": "AMD EPYC 7443 24-Core Processor"
+  },
+  "ramList": [
+    {
+      "number_of_modules": 1,
+      "storage_per_module_gb": 256
+    }
+  ]
+}

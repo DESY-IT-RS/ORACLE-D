@@ -22,6 +22,7 @@ class WorkerNode:
         model: str = "HAL 9000",
         cpu_model: str = "IBM 7090",
         year: int = 1992,
+        hostname: str | None = None,
     ):
         """Creates a simulated worker node with configurable hardware specs.
 
@@ -48,6 +49,9 @@ class WorkerNode:
             Example: 'AMD EPYC 7402 24-Core Processor'
         year : int
             The installation year of the node.
+        hostname : str, optional
+            The machine's real hostname. Defaults to ``None``, which names the node
+            ``<node_key>-<node_number + 1>``.
         """
         if freq_dep_specs is None:
             freq_dep_specs = {3.0: (300, 3000), 2.0: (200, 2000), 1.0: (100, 1000)}
@@ -96,6 +100,7 @@ class WorkerNode:
         self._model = model
         self._cpu_model = cpu_model
         self._year = year
+        self._hostname = hostname
 
         # Handlers
         self._job_started_handler = None
@@ -114,6 +119,8 @@ class WorkerNode:
 
     @property
     def hostname(self):
+        if self._hostname is not None:
+            return self._hostname
         return f"{self._node_key}-{self._node_number + 1:03}"
 
     @property

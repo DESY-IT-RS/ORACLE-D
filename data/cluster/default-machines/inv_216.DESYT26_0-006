@@ -1,0 +1,56 @@
+{
+  "node_id": "DESYT26_0-006",
+  "group": "DEFAULT",
+  "installation_date": "2022-01-01",
+  "number_of_vcores": 96,
+  "power_consumption": {
+    "idle": 187.0,
+    "cpu_frequency_dependence": {
+      "cpu_frequency_Mhz": [
+        3200,
+        3100,
+        2900,
+        2700,
+        2500,
+        2300,
+        2100,
+        1900,
+        1700,
+        1500
+      ],
+      "hepscore": [
+        1704.54,
+        1614.25,
+        1606.07,
+        1604.79,
+        1610.74,
+        1049.96,
+        1044.47,
+        1050.89,
+        1049.78,
+        689.87
+      ],
+      "power_W": [
+        658,
+        655.8,
+        654.74,
+        656.35,
+        652.88,
+        405.32,
+        402.85,
+        402.91,
+        403.93,
+        333.35
+      ]
+    }
+  },
+  "cpu": {
+    "model": "AMD EPYC 74F3 24-Core Processor"
+  },
+  "ramList": [
+    {
+      "number_of_modules": 1,
+      "storage_per_module_gb": 256
+    }
+  ]
+}

@@ -1,0 +1,36 @@
+{
+  "node_id": "node-b.test",
+  "group": "OTHER",
+  "installation_date": "2022-01-01",
+  "number_of_vcores": 4,
+  "power_consumption": {
+    "idle": 60.0,
+    "cpu_frequency_dependence": {
+      "cpu_frequency_Mhz": [
+        3000,
+        2000
+      ],
+      "hepscore": [
+        2000.0,
+        1500.0
+      ],
+      "power_W": [
+        300.0,
+        200.0
+      ]
+    }
+  },
+  "cpu": {
+    "model": "Other CPU"
+  },
+  "ramList": [
+    {
+      "number_of_modules": 1,
+      "storage_per_module_gb": 8
+    },
+    {
+      "number_of_modules": 1,
+      "storage_per_module_gb": 8
+    }
+  ]
+}

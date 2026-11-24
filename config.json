@@ -14,8 +14,7 @@
   
     "cluster" : {
         "cluster_name" : "DEFAULT",
-        "inventory_csv" : "data/cluster/default-machinegroups_inventory.csv",
-        "frequency_csv" : "data/cluster/default-frequency_dependence.csv",
+        "inventory_dir" : "data/cluster/default-machines",
         "strict" : false
     },
 

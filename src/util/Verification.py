@@ -25,7 +25,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from pathlib import Path
 
-from cluster.ClusterLoader import load_cluster_inventory
+from cluster.ClusterLoader import load_cluster_directory, load_cluster_inventory
 from jobs.Jobs import Job
 from jobs.VOJobFactory import (
     ATLASJobFactory,
@@ -49,7 +49,8 @@ REQUIRED_KEYS = {
         "savings_policy",
     ),
     "carbon_intensity": ("folder", "filename", "high_CI_threshold"),
-    "cluster": ("cluster_name", "inventory_csv", "frequency_csv", "strict"),
+    # Plus either inventory_csv and frequency_csv, or inventory_dir: see _check_cluster.
+    "cluster": ("cluster_name", "strict"),
     "jobs": ("initial_mix", "regular_incoming_mix"),
 }
 
@@ -251,30 +252,60 @@ def _check_jobs(section, result):
 
 
 def _check_cluster(section, jobs, result):
-    try:
-        inventory, worker_nodes = load_cluster_inventory(
-            section["inventory_csv"],
-            section["frequency_csv"],
-            cluster_name=section["cluster_name"],
-            strict=section["strict"],
+    csv_keys = [key for key in ("inventory_csv", "frequency_csv") if key in section]
+    from_dir = "inventory_dir" in section
+    if from_dir == bool(csv_keys) or (csv_keys and len(csv_keys) != 2):
+        result.fail(
+            "The cluster section needs either inventory_csv and frequency_csv, "
+            f"or inventory_dir; found {', '.join(csv_keys + ['inventory_dir'] * from_dir) or 'none'}."
         )
+        return
+
+    try:
+        if from_dir:
+            source = f"Cluster directory '{section['inventory_dir']}'"
+            inventory, worker_nodes = load_cluster_directory(
+                section["inventory_dir"],
+                pattern=section.get("inventory_pattern", "*"),
+                group=section["cluster_name"],
+                strict=section["strict"],
+            )
+        else:
+            source = (
+                f"Cluster files '{section['inventory_csv']}' and "
+                f"'{section['frequency_csv']}'"
+            )
+            inventory, worker_nodes = load_cluster_inventory(
+                section["inventory_csv"],
+                section["frequency_csv"],
+                cluster_name=section["cluster_name"],
+                strict=section["strict"],
+            )
     except (KeyError, ValueError, OSError, UnicodeDecodeError, csv.Error) as exc:
         result.fail(f"The cluster files cannot be loaded: {type(exc).__name__}: {exc}")
         return
-    result.succeed(
-        f"Cluster files '{section['inventory_csv']}' and '{section['frequency_csv']}' loaded."
-    )
+    result.succeed(f"{source} loaded.")
 
     if not worker_nodes:
-        result.fail(
-            f"The cluster has no worker nodes: no inventory row of cluster "
-            f"{section['cluster_name']!r} with machines and frequency data was loaded."
+        what = (
+            f"machine file of group {section['cluster_name']!r} with complete data"
+            if from_dir
+            else f"inventory row of cluster {section['cluster_name']!r} with machines "
+            f"and frequency data"
         )
+        result.fail(f"The cluster has no worker nodes: no {what} was loaded.")
         return
-    result.succeed(
-        f"Cluster {section['cluster_name']!r} has {len(worker_nodes)} worker node(s) "
-        f"of {len(inventory)} type(s)."
-    )
+    if from_dir:
+        group = section["cluster_name"]
+        result.succeed(
+            f"The cluster has {len(worker_nodes)} worker node(s) "
+            f"({f'group {group!r}' if group is not None else 'all groups'})."
+        )
+    else:
+        result.succeed(
+            f"Cluster {section['cluster_name']!r} has {len(worker_nodes)} worker node(s) "
+            f"of {len(inventory)} type(s)."
+        )
     result.inventory = inventory
     result.worker_nodes = worker_nodes
 

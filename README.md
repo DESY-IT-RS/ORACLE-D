@@ -71,8 +71,8 @@ python3 -m pytest
 ```
 
 The integration tests currently check that:
-- cluster inventory and frequency CSV files can be loaded into worker nodes;
-- malformed or incomplete CSV data raises an error with `strict` enabled and is logged and skipped otherwise;
+- cluster inventory and frequency CSV files, or a directory of per-machine JSON files, can be loaded into worker nodes;
+- malformed or incomplete CSV data or machine files raise an error with `strict` enabled and are logged and skipped otherwise;
 - `src/Main.py --config ...` accepts an explicit configuration file;
 - a minimal GridPP simulation completes and writes its run directory outputs;
 - the generated `summary.json` contains the expected metrics and preserved simulation parameters;
@@ -137,7 +137,7 @@ Found 1 error(s); the simulation was not started.
 
 It reports what would otherwise make a run hang, crash part-way, or silently produce wrong numbers:
 - missing config entries, a `simulation_length` or `timestep` that is not a positive integer, a `desired_starttime` that is not `YYYY-MM-DD HH:MM` or `null`, a `savings_policy` that is not exactly one of the policies above, a non-numeric `high_CI_threshold`, job counts that are not non-negative integers, and a missing or non-positive `incoming_timestep` when `regular_incoming_mix` is not empty;
-- cluster files the cluster loader cannot read (with `strict` true, every malformed row), and a cluster with no worker nodes, for example because `cluster_name` matches no inventory row;
+- a cluster section without exactly one data source (`inventory_csv` and `frequency_csv`, or `inventory_dir`), cluster files the cluster loader cannot read (with `strict` true, every malformed row or incomplete machine file), and a cluster with no worker nodes, for example because `cluster_name` matches no inventory row;
 - a VO in the job mixes whose largest job (cores and memory) fits on no node type, since such a job would block the queue for the rest of the run;
 - a carbon-intensity file that cannot be read or does not cover the simulated window. The window starts at the half-hour segment containing the start time and ends at the first row at or after the last update. The last update is at `start + ceil(simulation_length / timestep) * timestep`, so it can lie up to one timestep beyond `start + simulation_length`. Within the window, timestamps must be strictly increasing with at most 30 minutes between rows (15-minute data is fine), and every forecast and actual value must be a non-negative number.
 
@@ -208,10 +208,12 @@ The parameters for the cluster include:
 
 | Variables to edit  | Description |
 | :------------: | :------ |
-| cluster_name          | The name of the cluster  |
+| cluster_name          | The name of the cluster: the `cluster(main_Puppet_hostgroup)` column of the inventory CSV, or the `group` field of the machine files. With `inventory_dir`, `null` takes every machine.  |
 | inventory_csv   | The csv file with the inventory file of the cluster | 
 | frequency_csv   | The csv file with frequency dependence of the cluster | 
-| strict   | Whether the program should terminate when an incomplete frequency dependence data entry is found or simply log and continue. | 
+| inventory_dir   | Instead of the two csv files: a directory with one inventory JSON file per machine (see [Per-machine inventory files](#per-machine-inventory-files)) | 
+| inventory_pattern   | Optional, with `inventory_dir`: glob pattern of the machine files, default `*` | 
+| strict   | Whether the program should terminate when incomplete cluster data is found (a malformed frequency entry, an incomplete machine file) or simply log and continue. | 
 
 ## Adding Extra Options
 If you want to amend the measurements for each node or add different types of node not yet in the simulation. This needs to be done at the bottom of src/cluster/WorkerNode.py.
@@ -245,6 +247,33 @@ The format of the file is a csv with the following columns:
 | installation_date | The installation date of the machine (optional) | 
 
 The format of the frequency filename is: TODO
+
+### Per-machine inventory files
+Instead of the two CSV files, `cluster.inventory_dir` can point to a directory with one JSON file per machine, as written by the SUSFECIT inventory script (`collect_hw_facts.py`). Each file becomes one worker node named after its `node_id`; there are no node types, and the run summary lists every machine once. Files matching `inventory_pattern` that are not JSON objects (such as the `clush_command` the script leaves next to them) are skipped with a warning.
+
+The fields read are:
+
+| Field  | Used as |
+| :------------: | :------ |
+| node_id | The hostname of the worker node |
+| group | Compared with `cluster_name` (unless that is `null`) |
+| number_of_vcores | The number of threads; must equal `cpu.vcores_per_machine` when that is given |
+| ramList | The memory: the sum of `number_of_modules * storage_per_module_gb` |
+| power_consumption.idle | The idle power in W; must be positive |
+| power_consumption.cpu_frequency_dependence | The lists `cpu_frequency_Mhz`, `power_W` and `hepscore`, one entry per frequency; they must be non-empty and of equal length |
+| cpu.model | The cpu of the machine |
+| installation_date | The installation date, `YYYY-MM-DD` |
+
+A machine file without these values is incomplete: with `strict` true the run stops, otherwise the machine is skipped with a warning.
+
+The shipped default cluster, used by `config.json`, is `data/cluster/default-machines/`: the 310 machines of `default-machinegroups_inventory.csv` and `default-frequency_dependence.csv`, one file each, made by
+
+```
+python3 data/cluster/csv_to_machine_json.py data/cluster/default-machinegroups_inventory.csv \
+    data/cluster/default-frequency_dependence.csv data/cluster/default-machines
+```
+
+The files hold only the fields listed above; the simulation ignores every other field of the inventory template, so complete files from the inventory script load the same way. The installation date is the CSV year on 1 January, and the memory is one module of the machine's total. The machines are named `<type>_<subtype>-NNN` as by the CSV loader and the files are numbered in CSV order, so both loaders build the same nodes in the same order (the scheduler fills nodes in that order) and a run gives the same results with either.
 
 
 ## Copyright and License

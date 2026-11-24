@@ -25,6 +25,24 @@ fixtures in `tests/fixtures/` and write run output to pytest temporary directori
   non-numeric value in a numeric inventory column raises `ValueError` when `strict=True`.
 - **test_load_cluster_inventory_lenient_skips_invalid_numeric_inventory_value** — the same
   row with `strict=False` is skipped and returns an empty inventory.
+- **test_load_cluster_directory_builds_one_node_per_machine_file** — the two machine files in
+  `fixtures/data/cluster/nodes/` give one node each, named after `node_id`, with threads,
+  summed RAM, idle power, frequency table, cpu model and year; `clush_command` is skipped
+  with a warning.
+- **test_load_cluster_directory_filters_on_group_and_pattern** — `group` and the glob
+  pattern select machine files.
+- **test_load_cluster_directory_incomplete_node** — zero idle power, empty or unequal
+  frequency lists, vcores that disagree with `cpu.vcores_per_machine`, a bad
+  `installation_date` and a missing `ramList` raise `ValueError` with `strict=True` and skip
+  that machine otherwise.
+- **test_load_cluster_directory_duplicate_node_id** — a repeated `node_id` raises with
+  `strict=True` and keeps the first machine otherwise.
+- **test_load_cluster_directory_missing_directory** — a missing directory raises
+  `FileNotFoundError`.
+- **test_shipped_default_machine_files_match_the_default_csvs** — the 310 files in
+  `data/cluster/default-machines/` give, in the same order, the same nodes (hostname,
+  threads, RAM, idle power, frequencies, powers, HEPScores, cpu model, year) as the default
+  CSVs.
 
 ## test_main_run.py
 
@@ -42,6 +60,9 @@ fixtures in `tests/fixtures/` and write run output to pytest temporary directori
 - **test_summary_json_preserves_simulation_parameters** — the `simulation_parameters` section
   of `summary.json` reproduces the configured start time, length, timestep, policy, cluster
   inventory, and job mix.
+- **test_inventory_dir_node_gives_the_same_run_as_the_csv_node** — with `inventory_dir` and
+  `cluster_name` TEST only `node-a.test`, the minimal CSV node written as a machine file, is
+  loaded, and the run gives the same 1 kWh and 100 g as the CSV run.
 
 ## test_savings_policies.py
 
@@ -141,6 +162,8 @@ CSVs written to `tmp_path`:
   verbosity only warns; several problems are reported together.
 - cluster loader errors are reported, and VOs whose largest job fits on no node type are
   errors.
+- `inventory_dir` loads one node per machine file, `cluster_name` filters on `group`, the
+  cluster section must name exactly one data source.
 - a start before the carbon file, a file ending before the last update, and missing,
   negative, gapped or duplicate rows inside the window are errors; bad rows outside the window
   are ignored.
