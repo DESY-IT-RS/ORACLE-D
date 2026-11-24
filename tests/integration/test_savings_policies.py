@@ -8,7 +8,13 @@ def _policy_config(base_config, fixture_paths, savings_policy):
     base_config["Simulation"]["timestep"] = 1800
     base_config["Simulation"]["savings_policy"] = savings_policy
     base_config["cluster"]["frequency_csv"] = str(fixture_paths.multifreq_frequency_csv)
+    # medium logs the policy switches (EVENT) to simulation.log.
+    base_config["output"]["verbosity"] = "medium"
     return base_config
+
+
+def _count_in_log(run, text):
+    return (run.run_dir / "simulation.log").read_text().count(text)
 
 
 @pytest.mark.parametrize(
@@ -64,7 +70,7 @@ def test_cd1721_triggers_when_no_update_lands_exactly_on_the_hour(
     run = run_simulation(config, "cd1721_offset")
 
     assert run.result.returncode == 0, run.result.stdout + run.result.stderr
-    assert run.result.stdout.count("It's 5pm time to clock down the nodes!") == 1
+    assert _count_in_log(run, "5pm, clocking down 1 step(s)") == 1
 
     summary = json.loads((run.run_dir / "summary.json").read_text())
 
@@ -85,7 +91,7 @@ def test_cd1721_clocks_down_only_once_with_small_timesteps(
     run = run_simulation(config, "cd1721_small_steps")
 
     assert run.result.returncode == 0, run.result.stdout + run.result.stderr
-    assert run.result.stdout.count("It's 5pm time to clock down the nodes!") == 1
+    assert _count_in_log(run, "5pm, clocking down 1 step(s)") == 1
 
     summary = json.loads((run.run_dir / "summary.json").read_text())
 
@@ -109,18 +115,8 @@ def test_middaymaxcd_triggers_when_no_update_lands_in_the_minute_window(
     run = run_simulation(config, "middaymaxcd_offset")
 
     assert run.result.returncode == 0, run.result.stdout + run.result.stderr
-    assert (
-        run.result.stdout.count(
-            "It's 11:30am time to clock the nodes all the way down!"
-        )
-        == 1
-    )
-    assert (
-        run.result.stdout.count(
-            "It's 15:30pm time to clock the nodes all the way back up!"
-        )
-        == 1
-    )
+    assert _count_in_log(run, "11:30, clocking down to the minimum") == 1
+    assert _count_in_log(run, "15:30, clocking up to the maximum") == 1
 
     summary = json.loads((run.run_dir / "summary.json").read_text())
 

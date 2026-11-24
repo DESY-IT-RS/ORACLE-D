@@ -1,0 +1,47 @@
+{
+  "node_id": "DESYT16_0-018",
+  "group": "DEFAULT",
+  "installation_date": "2018-01-01",
+  "number_of_vcores": 96,
+  "power_consumption": {
+    "idle": 124.0,
+    "cpu_frequency_dependence": {
+      "cpu_frequency_Mhz": [
+        2300,
+        2200,
+        2000,
+        1800,
+        1600,
+        1400,
+        1200
+      ],
+      "hepscore": [
+        1061.09,
+        1029.79,
+        1022.08,
+        718.39,
+        712.1,
+        722.23,
+        481.97
+      ],
+      "power_W": [
+        526,
+        523.82,
+        522.14,
+        378.41,
+        377.92,
+        378.38,
+        308.38
+      ]
+    }
+  },
+  "cpu": {
+    "model": "AMD EPYC 7451 24-Core Processor"
+  },
+  "ramList": [
+    {
+      "number_of_modules": 1,
+      "storage_per_module_gb": 256
+    }
+  ]
+}

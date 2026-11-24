@@ -1,0 +1,44 @@
+{
+  "node_id": "DESYT3_0-019",
+  "group": "DEFAULT",
+  "installation_date": "2020-01-01",
+  "number_of_vcores": 96,
+  "power_consumption": {
+    "idle": 112.0,
+    "cpu_frequency_dependence": {
+      "cpu_frequency_Mhz": [
+        2700,
+        2500,
+        2300,
+        2100,
+        1900,
+        1700
+      ],
+      "hepscore": [
+        1450,
+        1450,
+        1102,
+        1100,
+        1102,
+        1102
+      ],
+      "power_W": [
+        530.1,
+        530.1,
+        330,
+        332.4,
+        333.3,
+        330.7
+      ]
+    }
+  },
+  "cpu": {
+    "model": "AMD EPYC 7402 24-Core Processor"
+  },
+  "ramList": [
+    {
+      "number_of_modules": 1,
+      "storage_per_module_gb": 256
+    }
+  ]
+}

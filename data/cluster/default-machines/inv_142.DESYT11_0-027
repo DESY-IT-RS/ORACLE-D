@@ -1,0 +1,47 @@
+{
+  "node_id": "DESYT11_0-027",
+  "group": "DEFAULT",
+  "installation_date": "2023-01-01",
+  "number_of_vcores": 224,
+  "power_consumption": {
+    "idle": 336.0,
+    "cpu_frequency_dependence": {
+      "cpu_frequency_Mhz": [
+        2000,
+        1800,
+        1600,
+        1400,
+        1200,
+        1000,
+        800
+      ],
+      "hepscore": [
+        2587.39,
+        2343.3,
+        2132.99,
+        1833.76,
+        1624.6,
+        1378.12,
+        1115.09
+      ],
+      "power_W": [
+        739.18,
+        687.38,
+        666.87,
+        598.68,
+        548.73,
+        509.22,
+        490.61
+      ]
+    }
+  },
+  "cpu": {
+    "model": "Intel(R) Xeon(R) Platinum 8480CL"
+  },
+  "ramList": [
+    {
+      "number_of_modules": 1,
+      "storage_per_module_gb": 512
+    }
+  ]
+}

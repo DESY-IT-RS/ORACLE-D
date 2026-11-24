@@ -1,0 +1,50 @@
+{
+  "node_id": "DESYT382_0-069",
+  "group": "DEFAULT",
+  "installation_date": "2014-01-01",
+  "number_of_vcores": 1,
+  "power_consumption": {
+    "idle": 59.0,
+    "cpu_frequency_dependence": {
+      "cpu_frequency_Mhz": [
+        2500,
+        2400,
+        2200,
+        2000,
+        1800,
+        1600,
+        1400,
+        1200
+      ],
+      "hepscore": [
+        335,
+        251.55,
+        250.83,
+        251.84,
+        250.59,
+        250.59,
+        251.69,
+        251.63
+      ],
+      "power_W": [
+        289,
+        225.08,
+        224.75,
+        224.71,
+        226.53,
+        224.79,
+        225.15,
+        225.33
+      ]
+    }
+  },
+  "cpu": {
+    "model": "Intel(R) Xeon(R) CPU E5-2450 v2"
+  },
+  "ramList": [
+    {
+      "number_of_modules": 1,
+      "storage_per_module_gb": 1
+    }
+  ]
+}

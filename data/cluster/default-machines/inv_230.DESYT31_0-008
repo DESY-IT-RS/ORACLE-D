@@ -1,0 +1,41 @@
+{
+  "node_id": "DESYT31_0-008",
+  "group": "DEFAULT",
+  "installation_date": "2021-01-01",
+  "number_of_vcores": 96,
+  "power_consumption": {
+    "idle": 168.0,
+    "cpu_frequency_dependence": {
+      "cpu_frequency_Mhz": [
+        3200,
+        3100,
+        2900,
+        2700,
+        2500
+      ],
+      "hepscore": [
+        1602.6,
+        1536.16,
+        1388.77,
+        1389.34,
+        1163.13
+      ],
+      "power_W": [
+        648,
+        637.24,
+        469.84,
+        470.6,
+        368.51
+      ]
+    }
+  },
+  "cpu": {
+    "model": "AMD EPYC 7F72 24-Core Processor"
+  },
+  "ramList": [
+    {
+      "number_of_modules": 1,
+      "storage_per_module_gb": 256
+    }
+  ]
+}

@@ -24,6 +24,7 @@ def fixture_paths():
         / "data"
         / "cluster"
         / "multifreq_frequency_dependence.csv",
+        node_dir=FIXTURES_DIR / "data" / "cluster" / "nodes",
     )
 
 

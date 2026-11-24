@@ -41,3 +41,23 @@ def test_summary_json_preserves_simulation_parameters(completed_run):
         "GridPP": 1,
     }
     assert parameters["jobs"]["regular_incoming"] == []
+
+
+def test_inventory_dir_node_gives_the_same_run_as_the_csv_node(
+    run_simulation, base_config, fixture_paths
+):
+    # node-a.test (group TEST) is the minimal CSV node written as a machine JSON file.
+    del base_config["cluster"]["inventory_csv"], base_config["cluster"]["frequency_csv"]
+    base_config["cluster"]["inventory_dir"] = str(fixture_paths.node_dir)
+    base_config["cluster"]["inventory_pattern"] = "inv_*"
+
+    run = run_simulation(base_config, "inventory_dir")
+
+    assert run.result.returncode == 0, run.result.stdout + run.result.stderr
+    summary = json.loads((run.run_dir / "summary.json").read_text())
+    assert summary["simulation_parameters"]["cluster"]["worker_node_inventory"] == {
+        "node-a.test": 1
+    }
+    assert summary["jobs"]["finished"] == 1
+    assert summary["energy"]["total_kwh"] == pytest.approx(1.0)
+    assert summary["carbon"]["total_g"] == pytest.approx(100.0)

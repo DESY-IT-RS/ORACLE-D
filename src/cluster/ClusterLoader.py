@@ -8,13 +8,15 @@
 
 """Runtime loader for cluster node definitions.
 
-This module replaces generated hardcoded node subclasses with dynamic loading
-from CSV inputs at startup.
+The cluster is read either from a machine-group inventory CSV with a frequency
+dependence CSV, or from a directory with one inventory JSON file per machine.
 """
 
 from __future__ import annotations
 
 import csv
+import json
+from datetime import date
 from pathlib import Path
 
 from cluster.WorkerNode import WorkerNode
@@ -173,4 +175,138 @@ def load_cluster_inventory(
         machinegroups_inventory_csv,
         frequency_dependence_csv,
     )
+    return inventory, worker_nodes
+
+
+def _read_node_json(path: Path) -> WorkerNode:
+    """Build one `WorkerNode` from a per-machine inventory JSON; raise ValueError if incomplete."""
+    node = json.loads(path.read_text(encoding="utf-8"))
+    try:
+        hostname = node["node_id"].strip()
+        threads = int(node["number_of_vcores"])
+        memory_gb = sum(
+            float(ram["number_of_modules"]) * float(ram["storage_per_module_gb"])
+            for ram in node["ramList"]
+        )
+        idle_power_w = float(node["power_consumption"]["idle"])
+        dependence = node["power_consumption"]["cpu_frequency_dependence"]
+        frequencies_mhz = [float(f) for f in dependence["cpu_frequency_Mhz"]]
+        powers_w = [float(p) for p in dependence["power_W"]]
+        hep_scores = [float(h) for h in dependence["hepscore"]]
+        cpu_model = node["cpu"]["model"].strip()
+        installation_date = node["installation_date"]
+    except (KeyError, TypeError, AttributeError, ValueError) as exc:
+        raise ValueError(f"Incomplete or invalid node data in {path}: {exc!r}") from exc
+    try:
+        year = date.fromisoformat(installation_date).year
+    except (TypeError, ValueError) as exc:
+        raise ValueError(
+            f"Invalid installation_date {installation_date!r} in {path}, "
+            f"expected YYYY-MM-DD"
+        ) from exc
+
+    problems = []
+    if not hostname:
+        problems.append("empty node_id")
+    if threads < 1:
+        problems.append(f"number_of_vcores = {threads}")
+    if node["cpu"].get("vcores_per_machine", threads) != threads:
+        problems.append(
+            f"number_of_vcores = {threads} but cpu.vcores_per_machine = "
+            f"{node['cpu']['vcores_per_machine']}"
+        )
+    if memory_gb <= 0:
+        problems.append("no memory in ramList")
+    if idle_power_w <= 0:
+        problems.append(f"power_consumption.idle = {idle_power_w}")
+    if not frequencies_mhz:
+        problems.append("no cpu_frequency_dependence points")
+    if not len(frequencies_mhz) == len(powers_w) == len(hep_scores):
+        problems.append(
+            f"cpu_frequency_dependence lists differ in length "
+            f"({len(frequencies_mhz)} frequencies, {len(powers_w)} powers, "
+            f"{len(hep_scores)} hepscores)"
+        )
+    if problems:
+        raise ValueError(f"Incomplete node data in {path}: {'; '.join(problems)}")
+
+    freq_dep_specs = {
+        f / 1000.0: (p, h) for f, p, h in zip(frequencies_mhz, powers_w, hep_scores)
+    }
+    return WorkerNode(
+        hostname,
+        0,
+        threads,
+        memory_gb,
+        idle_power_w,
+        freq_dep_specs,
+        "",
+        cpu_model,
+        year,
+        hostname=hostname,
+    )
+
+
+def load_cluster_directory(
+    inventory_dir: str | Path,
+    pattern: str = "*",
+    group: str | None = None,
+    strict: bool = True,
+) -> tuple[dict[str, int], list[WorkerNode]]:
+    """Load the cluster from a directory with one inventory JSON file per machine.
+
+    Parameters
+    ----------
+    inventory_dir: str | Path
+        Directory with the per-machine JSON files.
+    pattern: str, optional
+        Glob pattern of the node files in that directory. Defaults to ``"*"``.
+        Matching files that are not JSON objects are skipped with a warning.
+    group: str | None, optional
+        Keep only machines whose ``group`` field equals this; ``None`` keeps all.
+    strict: bool, optional
+        If True, raise an error on incomplete or invalid node data.
+        If False, log a warning and skip the machine. Defaults to True.
+
+    Returns
+    ----------
+    tuple: A tuple containing:
+        - An `inventory` dictionary mapping each hostname to 1.
+        - One `WorkerNode` per machine, in file-name order.
+    """
+    inventory_dir = _resolve_path(inventory_dir)
+    if not inventory_dir.is_dir():
+        raise FileNotFoundError(f"Inventory directory {inventory_dir} does not exist")
+
+    inventory = {}
+    worker_nodes = []
+    for path in sorted(p for p in inventory_dir.glob(pattern) if p.is_file()):
+        try:
+            node = json.loads(path.read_text(encoding="utf-8"))
+        except (UnicodeDecodeError, json.JSONDecodeError):
+            node = None
+        if not isinstance(node, dict):
+            logger.warning("Skipping %s: not a JSON node file", path)
+            continue
+        if group is not None and node.get("group", "") != group:
+            continue
+
+        try:
+            worker_node = _read_node_json(path)
+        except ValueError as exc:
+            if strict:
+                raise
+            logger.warning("Skipping machine: %s", exc)
+            continue
+        if worker_node.hostname in inventory:
+            message = f"Duplicate node_id {worker_node.hostname!r} in {path}"
+            if strict:
+                raise ValueError(message)
+            logger.warning("Skipping machine: %s", message)
+            continue
+
+        inventory[worker_node.hostname] = 1
+        worker_nodes.append(worker_node)
+
+    logger.info("Loaded %d worker nodes from %s", len(worker_nodes), inventory_dir)
     return inventory, worker_nodes
