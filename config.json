@@ -29,7 +29,6 @@
 
     "output" : {
         "verbosity" : "medium",
-        "debug" : false,
         "log_dir" : "logs/runs",
         "run_label" : "RF20PMTest-50000GridPP-Base"
     }

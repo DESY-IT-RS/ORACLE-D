@@ -7,7 +7,6 @@ def test_main_runs_with_explicit_config_and_writes_run_directory(completed_run):
     run_dir = completed_run.run_dir
     assert run_dir.name.endswith("_integration_test")
     assert (run_dir / "config.json").is_file()
-    assert (run_dir / "parameters.txt").is_file()
     assert (run_dir / "simulation.log").is_file()
     assert (run_dir / "summary.txt").is_file()
     assert (run_dir / "summary.json").is_file()

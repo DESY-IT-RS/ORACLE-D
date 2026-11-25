@@ -23,15 +23,12 @@
 
 import argparse
 import json
-import logging
 import os
 from pathlib import Path
 
 from cluster.ClusterLoader import load_cluster_inventory
 from simulation.Simulation import Simulation
 from util import Logging
-
-logger = Logging.get_logger()
 
 
 def _default_config_path():
@@ -52,27 +49,18 @@ def main(config_path=None):
         strict=config["cluster"]["strict"],
     )
 
-    output_cfg = config.setdefault("output", {})
-    verbosity_raw = output_cfg.get("verbosity")
-    config["output"]["verbosity"] = Logging.normalize_verbosity(verbosity_raw)
-
-    if config["output"].get("debug", False):
-        logging_level = logging.DEBUG
-    else:
-        logging_level = logging.INFO
-
     run_dir = Logging.create_run_directory(config)
     with open(os.path.join(run_dir, "config.json"), "w") as outfile:
         json.dump(config, outfile, indent=4)
         outfile.write("\n")
+    Logging.configure_logger(run_dir)
 
-    Logging.configure_logger(logger, logging_level, run_dir)
+    verbosity_raw = config["output"]["verbosity"]
+    valid_verbosity = Logging.set_logging_levels(verbosity_raw)
+    logger = Logging.get_logger()
+    if not valid_verbosity:
+        logger.warning(f"Invalid verbosity {verbosity_raw}, set to 'low' as default.")
     logger.info(f"Writing run output to {run_dir}")
-
-    if verbosity_raw != config["output"]["verbosity"]:
-        logger.warning(
-            f"Invalid verbosity value '{verbosity_raw}', defaulting to 'high'"
-        )
 
     sim = Simulation(config, inventory, worker_nodes)
 

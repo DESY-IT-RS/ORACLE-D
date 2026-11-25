@@ -10,8 +10,12 @@ import datetime
 import logging
 import os
 import re
+import sys
 
 VALID_VERBOSITY_LEVELS = ("low", "medium", "high")
+
+root_logger = logging.getLogger("CLUSTERSIM")
+sim_logger = logging.getLogger("CLUSTERSIM.Sim")
 
 
 def __get_fn_log(log_dir=None):
@@ -26,21 +30,28 @@ def __get_fn_log(log_dir=None):
 
 
 def get_logger():
-    return logging.getLogger("CLUSTERSIM")
+    return root_logger
 
 
-def configure_logger(logger, level=logging.INFO, log_dir=None):
-    logger.setLevel(level)
+def get_sim_logger():
+    return sim_logger
 
-    # Avoid duplicate lines if configure_logger() is called more than once.
-    logger.handlers = []
-    handler = logging.FileHandler(__get_fn_log(log_dir))
-    handler.setFormatter(
-        logging.Formatter(
-            "%(asctime)s  %(levelname)s  [%(filename)s:%(funcName)s]  %(message)s"
-        )
+
+def configure_logger(log_dir=None):
+    formatter = logging.Formatter(
+        "%(asctime)s  %(levelname)s  [%(filename)s:%(funcName)s]  %(message)s"
     )
-    logger.addHandler(handler)
+    # Avoid duplicate lines if configure_logger() is called more than once.
+    for handler in root_logger.handlers[:]:
+        root_logger.removeHandler(handler)
+    # Handlers
+    stream_handler = logging.StreamHandler(sys.stdout)
+    stream_handler.setFormatter(formatter)
+    file_handler = logging.FileHandler(__get_fn_log(log_dir))
+    file_handler.setFormatter(formatter)
+    # Add handlers
+    root_logger.addHandler(stream_handler)
+    root_logger.addHandler(file_handler)
 
 
 def create_run_directory(config):
@@ -63,7 +74,7 @@ def create_run_directory(config):
     return unique_run_dir
 
 
-def normalize_verbosity(raw_verbosity, default="high"):
+def normalize_verbosity(raw_verbosity, default="medium"):
     verbosity = str(raw_verbosity) if raw_verbosity is not None else default
     if verbosity not in VALID_VERBOSITY_LEVELS:
         return default
@@ -80,3 +91,22 @@ def _default_run_label(config):
 def _slugify(value):
     slug = re.sub(r"[^A-Za-z0-9]+", "_", str(value)).strip("_")
     return slug.lower() or "simulation"
+
+
+def set_logging_levels(verbosity_raw: str):
+    if verbosity_raw == "low":
+        root_logger.setLevel(logging.INFO)
+        sim_logger.setLevel(logging.WARNING)
+        return True
+    elif verbosity_raw == "medium":
+        root_logger.setLevel(logging.INFO)
+        sim_logger.setLevel(logging.INFO)
+        return True
+    elif verbosity_raw == "high":
+        root_logger.setLevel(logging.DEBUG)
+        sim_logger.setLevel(logging.DEBUG)
+        return True
+    else:
+        root_logger.setLevel(logging.INFO)
+        sim_logger.setLevel(logging.INFO)
+        return False
