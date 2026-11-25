@@ -49,7 +49,7 @@ class Simulation:
 
         logger.info("Setting up simulation.")
         logger.info(
-            "Start date: "
+            "Simulation start: "
             + self._simulation_time._start_time.strftime("%Y-%m-%d %H:%M:%S")
         )
         logger.info(
@@ -192,12 +192,13 @@ class Simulation:
 
         simulation_parameters = self._get_simulation_parameters(datapath, datafile)
         self._datalogger.set_simulation_parameters(simulation_parameters)
-        simulation_parameters_text = self._format_simulation_parameters(
-            simulation_parameters
-        )
+        logger.info(f"Simulation end: {simulation_parameters['max_end_time']}")
         logger.info(
-            f"Created simulation with parameters:\n{simulation_parameters_text}"
+            "Grid carbon intensity segments: %s to %s",
+            simulation_parameters["carbon_intensity"]["segments"]["start"],
+            simulation_parameters["carbon_intensity"]["segments"]["end"],
         )
+        logger.info("Simulation parameters are set.")
         logger.info("Simulation Started. Good Luck")
 
     def _get_simulation_parameters(self, carbon_data_path, carbon_data_file):
@@ -239,36 +240,6 @@ class Simulation:
             },
         }
 
-    def _format_simulation_parameters(self, simulation_parameters):
-        carbon_intensity = simulation_parameters["carbon_intensity"]
-        cluster = simulation_parameters["cluster"]
-        jobs = simulation_parameters["jobs"]
-        regular_jobs = "none"
-        if jobs["regular_incoming"]:
-            regular_jobs = ", ".join(
-                f"{vo}: {count} per {regular_job['incoming_timestep_seconds']} seconds"
-                for regular_job in jobs["regular_incoming"]
-                for vo, count in regular_job["job_mix"].items()
-            )
-
-        return "\n".join(
-            [
-                f"  start_time: {simulation_parameters['start_time']}",
-                f"  max_end_time: {simulation_parameters['max_end_time']}",
-                f"  simulation_length_seconds: {simulation_parameters['simulation_length_seconds']}",
-                f"  timestep_seconds: {simulation_parameters['timestep_seconds']}",
-                f"  savings_policy: {simulation_parameters['savings_policy']}",
-                f"  carbon_intensity_file: {carbon_intensity['file']}",
-                f"  carbon_intensity_segments: {carbon_intensity['segments']['start']} to {carbon_intensity['segments']['end']}",
-                f"  high_CI_threshold: {carbon_intensity['high_CI_threshold']}",
-                f"  worker_nodes: {cluster['worker_nodes']}",
-                f"  worker_cores: {cluster['worker_cores']}",
-                f"  worker_node_inventory: {self._format_job_mix(cluster['worker_node_inventory'])}",
-                f"  initial_jobs: {self._format_job_mix(jobs['initial'])}",
-                f"  regular_incoming_jobs: {regular_jobs}",
-            ]
-        )
-
     def _format_job_mix(self, job_mix):
         if not job_mix:
             return "none"
@@ -301,20 +272,18 @@ class Simulation:
                 realtottime = (
                     datetime.now() - self._simulation_time.get_origin_datetime()
                 )  # Real Time
-                self._datalogger.print_summary(
-                    True,
-                    self._rundescript,
-                    self._peaktime_str,
-                    simtottime.total_seconds(),
-                    self._simulation_time.get_timestep(),
-                    realtottime.total_seconds(),
-                )
-
                 logger.info("No more jobs!")
                 logger.info(
                     f"Ending simulation at {self._simulation_time.get_current_datetime()}"
                 )
                 logger.info("Simulation Finished. Check logs directory for output")
+                self._datalogger.print_summary(
+                    True,
+                    self._peaktime_str,
+                    simtottime.total_seconds(),
+                    self._simulation_time.get_timestep(),
+                    realtottime.total_seconds(),
+                )
                 sys.exit()
 
             # Second end condition: When two weeks in simulation time has passed.
@@ -322,20 +291,18 @@ class Simulation:
                 realtottime = (
                     datetime.now() - self._simulation_time.get_origin_datetime()
                 )  # Real Time
-                self._datalogger.print_summary(
-                    True,
-                    self._rundescript,
-                    self._peaktime_str,
-                    simtottime.total_seconds(),
-                    self._simulation_time.get_timestep(),
-                    realtottime.total_seconds(),
-                )
-
                 logger.info("You have been running for a week! Time to stop")
                 logger.info(
                     f"Ending simulation at {self._simulation_time.get_current_datetime()}"
                 )
                 logger.info("Simulation Finished. Check logs directory for output")
+                self._datalogger.print_summary(
+                    True,
+                    self._peaktime_str,
+                    simtottime.total_seconds(),
+                    self._simulation_time.get_timestep(),
+                    realtottime.total_seconds(),
+                )
                 sys.exit()
 
             # Move forward in time

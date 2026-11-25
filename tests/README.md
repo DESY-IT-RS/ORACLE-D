@@ -30,7 +30,7 @@ fixtures in `tests/fixtures/` and write run output to pytest temporary directori
 
 - **test_main_runs_with_explicit_config_and_writes_run_directory** — `python3 src/Main.py
   --config ...` exits with code 0 and creates a run directory containing `config.json`,
-  `parameters.txt`, `simulation.log`, `summary.txt`, and `summary.json`.
+  `simulation.log`, `summary.txt`, and `summary.json`.
 - **test_main_help_documents_config_argument** — `--help` exits cleanly and documents the
   `--config` argument.
 

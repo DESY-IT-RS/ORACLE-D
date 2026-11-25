@@ -14,7 +14,8 @@ from cluster.WorkerNode import *
 from jobs.Jobs import Job
 from util import Logging
 
-logger = Logging.get_logger()
+root_logger = Logging.get_logger()
+sim_logger = Logging.get_sim_logger()
 
 
 class Cluster:
@@ -50,8 +51,8 @@ class Cluster:
         self._worker_nodes = worker_nodes
         for worker_node in self._worker_nodes:
             worker_node.simulation_time = simulation_time
-        logger.info(
-            f"Created cluster with {self.get_number_of_nodes()} worker nodes and {self.get_number_of_cores()} cores"
+        root_logger.info(
+            f"Instantiated cluster with {self.get_number_of_nodes()} worker nodes and {self.get_number_of_cores()} cores"
         )
         self._queued_jobs = deque[Job]()
         self._timestep_power_dissipated = 0
@@ -136,7 +137,9 @@ class Cluster:
         day = self._simulation_time.get_current_datetime().strftime("%d/%m/%Y")
         if day != self._last_day:
             self._days += 1
-            logger.debug(f"{day}: Simulation Day {self._days!s}")
+            sim_logger.info(
+                f"{day}: Simulation Day {self._days!s}, {len(self._queued_jobs)} jobs in queue"
+            )
             self._last_day = day
 
         for worker_node in self._worker_nodes:
@@ -184,14 +187,14 @@ class Cluster:
             five_pm = now.replace(hour=17, minute=0, second=0, microsecond=0)
             nine_pm = now.replace(hour=21, minute=0, second=0, microsecond=0)
             if previous_update < five_pm <= now:
-                logger.debug("It's 5pm time to clock down the nodes!")
+                sim_logger.info("It's 5pm time to clock down the nodes!")
                 for worker_node in self._worker_nodes:
                     worker_node.clock_down()
                     if self._energy_saving_try == "cdcd1721":
                         worker_node.clock_down()
 
             if previous_update < nine_pm <= now:
-                logger.debug("It's 9pm time to clock up the nodes!")
+                sim_logger.info("It's 9pm time to clock up the nodes!")
                 for worker_node in self._worker_nodes:
                     worker_node.clock_up()
                     if self._energy_saving_try == "cdcd1721":
@@ -202,12 +205,14 @@ class Cluster:
             half_past_eleven = now.replace(hour=11, minute=30, second=0, microsecond=0)
             half_past_three = now.replace(hour=15, minute=30, second=0, microsecond=0)
             if previous_update < half_past_eleven <= now:
-                logger.debug("It's 11:30am time to clock the nodes all the way down!")
+                sim_logger.info(
+                    "It's 11:30am time to clock the nodes all the way down!"
+                )
                 for worker_node in self._worker_nodes:
                     worker_node.clock_minimum()
 
             if previous_update < half_past_three <= now:
-                logger.debug(
+                sim_logger.info(
                     "It's 15:30pm time to clock the nodes all the way back up!"
                 )
                 for worker_node in self._worker_nodes:
@@ -237,7 +242,7 @@ class Cluster:
                 and float(self._carbondata[next_segment][1])
                 > self._CIThresholdValue + 5
             ):
-                logger.info(
+                sim_logger.info(
                     "Usage is expected to be high, next timestep we'll clock down the nodes."
                 )
                 self._anticipate_clkdown = True
@@ -247,7 +252,7 @@ class Cluster:
                 and float(self._carbondata[next_segment][1])
                 < self._CIThresholdValue - 5
             ):
-                logger.info(
+                sim_logger.info(
                     "Usage is going down, next timestep we'll clock up the nodes."
                 )
                 self._anticipate_clockup = True
@@ -291,7 +296,7 @@ class Cluster:
                 self._timestep_power_dissipated, self._timestep_carbon_consumed
             )
 
-        logger.debug(f"Power dissipated: {self._timestep_power_dissipated}")
+        sim_logger.debug(f"Power dissipated: {self._timestep_power_dissipated}")
         self._timestep_power_dissipated = 0  # Reset the accumulator every time-step
 
     @property

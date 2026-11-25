@@ -9,7 +9,8 @@
 from simulation.Time import SimulationTime
 from util import Logging
 
-logger = Logging.get_logger()
+root_logger = Logging.get_logger()
+sim_logger = Logging.get_sim_logger()
 
 
 class WorkerNode:
@@ -313,7 +314,7 @@ class WorkerNode:
 
             self.change_clock_speed(self.frequencies_available[freqindex + 1])
         except IndexError:
-            logger.debug(
+            sim_logger.info(
                 f"This machine, {self.hostname}, is already running at its lowest frequency: {self.frequencies_available[freqindex]} GHz."
             )
 
@@ -343,7 +344,7 @@ class WorkerNode:
 
             self.change_clock_speed(self.frequencies_available[freqindex - 1])
         else:
-            logger.debug(
+            sim_logger.info(
                 f"This machine, {self.hostname}, is already running at its maximum frequency: {self.frequencies_available[freqindex]} GHz."
             )
 
